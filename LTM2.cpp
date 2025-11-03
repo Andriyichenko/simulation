@@ -1,4 +1,4 @@
-// LTM1 with x_0=1, T=1, z=0.5, a=1, b=1,alpha=1
+// LTM2 with x_0=1, T=1, z=0.5, a=1, b=1,alpha=1
 
 #include <algorithm>  
 #include <cmath>       
@@ -51,7 +51,7 @@ inline void compute( double a, double b, double W_state, double X_b) {
         sqrt_W_sq_plus_1 = sqrt(W_sq_plus_1);
 
         //a(x)の計算部分
-        drift = 0.5 * b_sq * W_state + 0.5 * a_b * sqrt_W_sq_plus_1; //a_x
+        drift = 0.5 * b_sq * W_state + a * sqrt_W_sq_plus_1 * asinh(W_state); //a_x
         drift_deriv = 0.5 * b_sq + (0.5 * a_b * W_state / sqrt_W_sq_plus_1); //a_x'
         
         //sigma(x)の計算部分
@@ -117,13 +117,13 @@ inline double order_1_5_opt(double W_state, const StateCoeff& coef,
 }
 
 // C1_IIIのbenchmark関数の定義
-inline double benchmark_opt(double X_b, double dt, double Z, double b, double a) {
+inline double benchmark_opt(double X_b, double dt, double Z, double Z1, double b, double a) {
     const double asinh_Xb = asinh(X_b);
-    const double sqrt_dt = sqrt(dt);
-    const double a_b = a * b;
-   
+    const double sqrt_dt = sqrt(dt), t_inv = 1.0/dt, dW = Z * sqrt_dt, dW_prime = Z1 * sqrt_dt;
+    const double exp_at = exp(a * dt), exp_t = exp(dt);
+    const double alpha_t = (exp_at - 1) * t_inv, beta_t = t_inv * ((exp_t - 1) * (1 + 0.5 * dt + 0.5 * dt * exp_t - exp_t));
 
-    return sinh((asinh_Xb) + 0.5 * a_b * dt + b * sqrt_dt * Z);
+    return exp_at * asinh_Xb + b * (alpha_t * dW + beta_t * dW_prime);
 
 }
 
@@ -169,7 +169,7 @@ int main() {
     // CSV ファイル名の設定
     const string dir_path = "data_source";
     system(("mkdir -p " + dir_path).c_str()); //フォルダーの確認 
-    const string csv_path = dir_path + "/LTM1_100_1000_data.csv"; //data sourceのファイル名指定
+    const string csv_path = dir_path + "/LTM2_100_1000_data.csv"; //data sourceのファイル名指定
     ofstream ofs(csv_path, ios::out | ios::trunc);
     
     if (!ofs) {
@@ -199,6 +199,7 @@ int main() {
         {
             // 各threadは独自の乱数生成器を持つ
             mt19937 rng(42);
+            mt19937 rng1(30); // 追加の乱数生成器
             normal_distribution<double> dist(mu, sigma);
          
             
@@ -212,7 +213,7 @@ int main() {
                 
                 for (int idx = 1; idx < points; ++idx) {
                     // ランダム数の生成
-                    const double Z = dist(rng);
+                    const double Z = dist(rng), Z1 = dist(rng1);
                     const double dW = sqrt_dt * Z;
 
                     
@@ -228,7 +229,7 @@ int main() {
                     W_state_Y= euler_maruyama_opt(W_state, coef_em, dt, sqrt_dt, Z);
                     W_state1_Y = milstein_opt(W_state1, coef_m, dt, Z);
                     W_state2_Y = order_1_5_opt(W_state2, coef_1_5, dt,Z);
-                    X_b_Y = benchmark_opt(X_b, dt,Z, b, a);
+                    X_b_Y = benchmark_opt(X_b, dt,Z, Z1, b, a);
 
                     dX0 += dt * phi_n(z_const, alpha, W_state_Y, dt);
                     dX1 += dt * phi_n(z_const, alpha, W_state1_Y, dt);
