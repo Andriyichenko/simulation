@@ -1,4 +1,4 @@
-// LTM2 with x_0=1, T=1, z=0.5, a=0.5, b=0.5,alpha=1
+// LTM3 with x_0=1, T=1, z=0.5, a=0.5, b=0.5,alpha=1
 
 #include <algorithm>  
 #include <cmath>       
@@ -42,7 +42,7 @@ struct StateCoeff {
     
     
     // 係数の計算
-inline void compute( double a, double b, double W_state) {
+inline void compute( double a, double b, double W_state, double X_b) {
         const double w_sq = W_state * W_state;
         const double W_sq_plus_1 = w_sq + 1.0;
         const double b_sq = b * b, b_quad = b * b * b, a_b = a * b;
@@ -51,8 +51,8 @@ inline void compute( double a, double b, double W_state) {
         sqrt_W_sq_plus_1 = sqrt(W_sq_plus_1);
 
         //a(x)の計算部分
-        drift = 0.5 * b_sq * W_state + a * sqrt_W_sq_plus_1 * asinh(W_state); //a_x
-        drift_deriv = 0.5 * b_sq + a + (a * W_state * asinh(W_state) / sqrt_W_sq_plus_1); //a_x'
+        drift = 0.5 * b_sq * W_state - a * sqrt_W_sq_plus_1 * asinh(W_state); //a_x
+        drift_deriv = 0.5 * b_sq - a - (a * W_state * asinh(W_state) / sqrt_W_sq_plus_1); //a_x'
         
         //sigma(x)の計算部分
         sigma = b * sqrt_W_sq_plus_1; //sigma
@@ -61,7 +61,12 @@ inline void compute( double a, double b, double W_state) {
         sigma_deriv = b_sq * W_state * sigma_inv; //sigma'
         sigma_deriv2 = b_quad * sigma_inv * sigma_inv * sigma_inv; //sigma''
 
-       
+        // X_b関連計算
+        if (X_b != 0.0) {
+            const double X_b_sq = X_b * X_b;
+            const double X_b_sq_plus_1 = X_b_sq + 1.0;
+            sqrt_X_b_sq_plus_1 = sqrt(X_b_sq_plus_1);
+        }
     }
 };
 
@@ -77,8 +82,8 @@ inline double A0(double W_state, const StateCoeff& coef,
 
 // Milstein
 inline double A1(double W_state, const StateCoeff& coef,
-                                   double dt, double Z, double sqrt_dt) {
-
+                                   double dt, double Z) {
+    const double sqrt_dt = sqrt(dt);
     const double dt_sq = dt * dt;
     const double Z_sq = Z * Z;
     return W_state + coef.drift * dt + coef.sigma * sqrt_dt * Z + 
@@ -87,9 +92,10 @@ inline double A1(double W_state, const StateCoeff& coef,
 
 // 1.5 
 inline double A2(double W_state, const StateCoeff& coef,
-                            double dt, double Z, double sqrt_dt) {
+                            double dt, double Z) {
     const double dt_sq = dt * dt;
     const double Z_sq = Z * Z;
+    const double sqrt_dt = sqrt(dt);
     const double dW = Z * sqrt_dt;
     const double dW_cube = dW * dW * dW;
     const double base = W_state + coef.drift * dt + coef.sigma * dW;
@@ -110,23 +116,23 @@ inline double A2(double W_state, const StateCoeff& coef,
     return base + milstein_term + term3 + term4;
 }
 
-// M2のbenchmark関数の定義
-inline double benchmark_opt(double X_b, double dt, double Z, double Z1, double b, double a, double sqrt_dt) {
+// M3のbenchmark関数の定義
+inline double benchmark_opt(double X_b, double dt, double Z, double Z1, double b, double a) {
     const double asinh_Xb = asinh(X_b);
-    const double a_dt = a * dt, t_a_inv = 1.0/a_dt,t_2a_inv = 1.0/(2*a_dt), dW = Z * sqrt_dt, dW_prime = Z1 * sqrt_dt;
-    const double exp_at = exp(a * dt), exp_2at = exp(2 * a * dt);
-    const double alpha_t = (exp_at - 1) * t_a_inv; 
-    const double beta_first = (exp_2at - 1) * t_2a_inv;
-    const double beta_second = (exp_at - 1) * t_a_inv;
+    const double sqrt_dt = sqrt(dt), a_dt = a * dt, t_a_inv = 1.0/a_dt,t_2a_inv = 1.0/(2*a_dt), dW = Z * sqrt_dt, dW_prime = Z1 * sqrt_dt;
+    const double exp_at = exp(-a * dt), exp_2at = exp(-2 * a * dt), exp_t = exp(dt);
+    const double alpha_t = (1 - exp_at) * t_a_inv; 
+    const double beta_first = (1 - exp_2at) * t_2a_inv;
+    const double beta_second = (1 - exp_at) * t_a_inv;
     const double beta_t = sqrt(beta_first - beta_second * beta_second);
 
     return exp_at * asinh_Xb + b * (alpha_t * dW + beta_t * dW_prime);
 
 }
 
-// inline double compute_sum_state(double delta_val) {
-//     return delta_val * (1.0 - 0.5 * delta_val);  
-// }
+inline double compute_sum_state(double delta_val) {
+    return delta_val * (1.0 - 0.5 * delta_val);  
+}
 
 
 
@@ -137,7 +143,7 @@ inline double benchmark_opt(double X_b, double dt, double Z, double Z1, double b
 
 int main() {  
 
-    constexpr double z_const=1.0;
+    constexpr double z_const=0.5;
     constexpr double alpha=1.0;//alpha \in (0,2) 1 と　0.1（分散が小さいが、数値漏れる） と1.9（分散が大きい）
     // 定数の定義
     constexpr double t_start = 0.0;
@@ -149,7 +155,7 @@ int main() {
     constexpr double b_sq = b * b;          
     constexpr double b_quad = b_sq * b_sq;
     constexpr double x_0 = 1.0;
-    constexpr int max_n = 10;
+    constexpr int max_n = 9;
     
 
 
@@ -166,7 +172,7 @@ int main() {
     // CSV ファイル名の設定
     const string dir_path = "data_source";
     system(("mkdir -p " + dir_path).c_str()); //フォルダーの確認 
-    const string csv_path = dir_path + "/LTM2_test_data.csv"; //data sourceのファイル名指定
+    const string csv_path = dir_path + "/LTM3_100_1000_data.csv"; //data sourceのファイル名指定
     ofstream ofs(csv_path, ios::out | ios::trunc);
     
     if (!ofs) {
@@ -179,7 +185,7 @@ int main() {
 
     // 時間ステップ数のループ
     for (int n = 0; n <= max_n; ++n) {
-        const int points = 100 + (n * 10); //(10-50-100-200-400-600-800-1000)
+        const int points = 100 + 100 * n; //(10-50-100-200-400-600-800-1000)
         const int paths = 8 * points * points;
         
         const double dt = (t_end - t_start) / (points - 1);
@@ -194,12 +200,12 @@ int main() {
         // OpenMP threadの並列化
         #pragma omp parallel reduction(+:S,Sm,S_1_5,Sb,B,Bm,B_1_5,Bb) //OpenMPのreduction句で指定の変数の和(+:)を並列計算 i.e. reduction(operator : variable_list)
         {
-    
-           
-         
+            // 各threadは独自の乱数生成器を持つ
             mt19937 rng(42);
-            mt19937 rng1(27);
+            mt19937 rng1(30); // 追加の乱数生成器
             normal_distribution<double> dist(mu, sigma);
+         
+            
             #pragma omp for schedule(static) nowait//threadごとに均等に計算を分配
             for (int p = 0; p < paths; ++p) {
                 // 変数の初期化
@@ -207,28 +213,26 @@ int main() {
                 double sum_W_state = 0.0, sum_W_state1 = 0.0, sum_W_state2 = 0.0, sum_W_state_X_b = 0.0;
                 double X_b = x_0,X_b_Y=x_0,W_state_Y=x_0,W_state1_Y=x_0,W_state2_Y=x_0;
                 double dX0 = 0.0, dX_b = 0.0, dX1 = 0.0, dX2 = 0.0;
-
+                
                 for (int idx = 1; idx < points; ++idx) {
                     // ランダム数の生成
                     const double Z = dist(rng), Z1 = dist(rng1);
                     const double dW = sqrt_dt * Z;
-                    
 
                     
                     // 係数の計算
-                    StateCoeff coef_em, coef_m, coef_1_5;
-                    coef_em.compute(a, b, W_state);
-                    coef_m.compute(a, b, W_state1);
-                    coef_1_5.compute(a, b, W_state2);
-
+                    StateCoeff coef_em, coef_m, coef_1_5, coef_X_b;
+                    coef_em.compute( a, b, W_state, 0.0);
+                    coef_m.compute( a, b, W_state1, 0.0);
+                    coef_1_5.compute( a, b, W_state2, 0.0);
+                    coef_X_b.compute( a, b, X_b, 0.0);
 
                     
                     // 状態の更新
                     W_state_Y= A0(W_state, coef_em, dt, sqrt_dt, Z);
-                    W_state1_Y = A1(W_state1, coef_m, dt, Z, sqrt_dt);
-                    W_state2_Y = A2(W_state2, coef_1_5, dt,Z, sqrt_dt);
-                    X_b_Y = benchmark_opt(X_b, dt,Z, Z1, b, a, sqrt_dt);
-                    
+                    W_state1_Y = A1(W_state1, coef_m, dt, Z);
+                    W_state2_Y = A2(W_state2, coef_1_5, dt,Z);
+                    X_b_Y = benchmark_opt(X_b, dt,Z, Z1, b, a);
 
                     dX0 += dt * phi_n(z_const, alpha, W_state_Y, dt);
                     dX1 += dt * phi_n(z_const, alpha, W_state1_Y, dt);
@@ -236,12 +240,10 @@ int main() {
                     dX_b += dt * phi_n(z_const, alpha, X_b_Y, dt);
 
                     //wとx_bの更新
-                    
                     W_state1 = W_state1_Y;
                     W_state2 = W_state2_Y;
                     W_state = W_state_Y;
                     X_b = X_b_Y;
-                    
 
                 }
 
@@ -280,14 +282,14 @@ int main() {
         cout << "-------------------------------------------------" << n << "\n";      
         cout << setprecision(10) << "points = " << points << "\n";       // ステップ数 points をコンソール表示
         cout << "-------------------------------------------------" <<  "\n";      
-        cout << setprecision(10) << "E0      = " << E[n] << "\n";         // EM 法の推定値 A[n] をコンソール表示
-        cout << setprecision(10) << "E1      = " << Em[n] << "\n";         // Milstein 法の推定値 Am[n] をコンソール表示
-        cout << setprecision(10) << "E2      = " << E_1_5[n] << "\n";      // 1.5 次法の推定値 A_1_5[n] をコンソール表示
-        cout << setprecision(10) << "E_b     = " << Eb[n] << "\n";      // 1.5 次法の推定値 A_1_5[n] をコンソール表示
-        cout << setprecision(10) << "A0      = " << A[n] << "\n";         // EM 法の推定値 A[n] をコンソール表示
-        cout << setprecision(10) << "A1      = " << Am[n] << "\n";         // Milstein 法の推定値 Am[n] をコンソール表示
-        cout << setprecision(10) << "A2      = " << A_1_5[n] << "\n";      // 1.5 次法の推定値 A_1_5[n] をコンソール表示
-        cout << setprecision(10) << "A_b     = " << Ab[n] << "\n";
+        cout << setprecision(10) << "E      = " << E[n] << "\n";         // EM 法の推定値 A[n] をコンソール表示
+        cout << setprecision(10) << "E_m    = " << Em[n] << "\n";         // Milstein 法の推定値 Am[n] をコンソール表示
+        cout << setprecision(10) << "E_1.5  = " << E_1_5[n] << "\n";      // 1.5 次法の推定値 A_1_5[n] をコンソール表示
+        cout << setprecision(10) << "E_b    = " << Eb[n] << "\n";      // 1.5 次法の推定値 A_1_5[n] をコンソール表示
+        cout << setprecision(10) << "A      = " << A[n] << "\n";         // EM 法の推定値 A[n] をコンソール表示 
+        cout << setprecision(10) << "A_m    = " << Am[n] << "\n";         // Milstein 法の推定値 Am[n] をコンソール表示
+        cout << setprecision(10) << "A_1.5  = " << A_1_5[n] << "\n";      // 1.5 次法の推定値 A_1_5[n] をコンソール表示
+        cout << setprecision(10) << "A_b  = " << Ab[n] << "\n";
 
         // CSVファイルに書き込み
         ofs << n << "," << points << ","  

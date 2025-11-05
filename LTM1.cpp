@@ -75,23 +75,24 @@ inline void compute( double a, double b, double W_state, double X_b) {
 // ========================================
 
 // Euler-Maruyama
-inline double euler_maruyama_opt(double W_state, const StateCoeff& coef,
+inline double A0(double W_state, const StateCoeff& coef,
                                          double dt, double sqrt_dt, double Z) {
     return W_state + coef.drift * dt + coef.sigma * sqrt_dt * Z;
 }
 
 // Milstein
-inline double milstein_opt(double W_state, const StateCoeff& coef,
+inline double A1(double W_state, const StateCoeff& coef,
                                    double dt, double Z) {
     const double sqrt_dt = sqrt(dt);
     const double dt_sq = dt * dt;
     const double Z_sq = Z * Z;
     return W_state + coef.drift * dt + coef.sigma * sqrt_dt * Z + 
            0.5 * coef.sigma_deriv * coef.sigma * (Z_sq * dt - dt);
+           
 }
 
 // 1.5 
-inline double order_1_5_opt(double W_state, const StateCoeff& coef,
+inline double A2(double W_state, const StateCoeff& coef,
                             double dt, double Z) {
     const double dt_sq = dt * dt;
     const double Z_sq = Z * Z;
@@ -169,7 +170,7 @@ int main() {
     // CSV ファイル名の設定
     const string dir_path = "data_source";
     system(("mkdir -p " + dir_path).c_str()); //フォルダーの確認 
-    const string csv_path = dir_path + "/LTM1_100_1000_data.csv"; //data sourceのファイル名指定
+    const string csv_path = dir_path + "/LTM1_test_data.csv"; //data sourceのファイル名指定
     ofstream ofs(csv_path, ios::out | ios::trunc);
     
     if (!ofs) {
@@ -217,17 +218,16 @@ int main() {
 
                     
                     // 係数の計算
-                    StateCoeff coef_em, coef_m, coef_1_5, coef_X_b;
-                    coef_em.compute( a, b, W_state, 0.0);
-                    coef_m.compute( a, b, W_state1, 0.0);
-                    coef_1_5.compute( a, b, W_state2, 0.0);
-                    coef_X_b.compute( a, b, X_b, 0.0);
+                    StateCoeff coef_em, coef_m, coef_1_5;
+                    coef_em.compute(a, b, W_state, 0.0);
+                    coef_m.compute(a, b, W_state1, 0.0);
+                    coef_1_5.compute(a, b, W_state2, 0.0);
 
                     
                     // 状態の更新
-                    W_state_Y= euler_maruyama_opt(W_state, coef_em, dt, sqrt_dt, Z);
-                    W_state1_Y = milstein_opt(W_state1, coef_m, dt, Z);
-                    W_state2_Y = order_1_5_opt(W_state2, coef_1_5, dt,Z);
+                    W_state_Y= A0(W_state, coef_em, dt, sqrt_dt, Z);
+                    W_state1_Y = A1(W_state1, coef_m, dt, Z);
+                    W_state2_Y = A2(W_state2, coef_1_5, dt,Z);
                     X_b_Y = benchmark_opt(X_b, dt,Z, b, a);
 
                     dX0 += dt * phi_n(z_const, alpha, W_state_Y, dt);
