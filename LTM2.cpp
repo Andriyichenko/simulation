@@ -23,9 +23,9 @@ inline double phi_n(double z_const,double alpha,double x,double h){
     if (h <=0.0) throw invalid_argument("h must be positive!");
     const double t =pow(h,alpha);
     const double PI = 3.141592653589793238462643383279502884;
-    const double norm =1.0/sqrt(2.0*PI*t);
-    const double z_const_sq =(x-z_const)*(x-z_const);
-    return norm*exp(-z_const_sq/(2.0 * t));
+    const double norm = 1.0 / sqrt(2.0 * PI * t);
+    const double z_const_sq = (x - z_const) * (x - z_const);
+    return norm * exp(-z_const_sq / (2.0 * t));
 
 }
 
@@ -111,16 +111,15 @@ inline double A2(double W_state, const StateCoeff& coef,
 }
 
 // M2のbenchmark関数の定義
-inline double benchmark_opt(double X_b, double dt, double Z, double Z1, double b, double a, double sqrt_dt) {
-    const double asinh_Xb = asinh(X_b);
-    const double a_dt = a * dt, t_a_inv = 1.0/a_dt,t_2a_inv = 1.0/(2*a_dt), dW = Z * sqrt_dt, dW_prime = Z1 * sqrt_dt;
-    const double exp_at = exp(a * dt), exp_2at = exp(2 * a * dt);
+inline double benchmark_opt(double x_0, double t, double dW, double dW_prime, double b, double a) {
+    const double Y_0 = asinh(x_0);
+    const double a_t = a * t, t_a_inv = 1.0/a_t,t_2a_inv = 1.0/(2*a_t);
+    const double exp_at = exp(a * t), exp_2at = exp(2 * a * t);
     const double alpha_t = (exp_at - 1) * t_a_inv; 
     const double beta_first = (exp_2at - 1) * t_2a_inv;
-    const double beta_second = (exp_at - 1) * t_a_inv;
-    const double beta_t = sqrt(beta_first - beta_second * beta_second);
+    const double beta_t = sqrt(beta_first - (alpha_t * alpha_t));
 
-    return exp_at * asinh_Xb + b * (alpha_t * dW + beta_t * dW_prime);
+    return exp_at * Y_0 + b * (alpha_t * dW + beta_t * dW_prime);
 
 }
 
@@ -194,9 +193,6 @@ int main() {
         // OpenMP threadの並列化
         #pragma omp parallel reduction(+:S,Sm,S_1_5,Sb,B,Bm,B_1_5,Bb) //OpenMPのreduction句で指定の変数の和(+:)を並列計算 i.e. reduction(operator : variable_list)
         {
-    
-           
-         
             mt19937 rng(42);
             mt19937 rng1(27);
             normal_distribution<double> dist(mu, sigma);
@@ -207,47 +203,43 @@ int main() {
                 double sum_W_state = 0.0, sum_W_state1 = 0.0, sum_W_state2 = 0.0, sum_W_state_X_b = 0.0;
                 double X_b = x_0,X_b_Y=x_0,W_state_Y=x_0,W_state1_Y=x_0,W_state2_Y=x_0;
                 double dX0 = 0.0, dX_b = 0.0, dX1 = 0.0, dX2 = 0.0;
+                double W_sum = 0.0, Wp_sum = 0.0; // 独立したブラウン運動の和
 
                 for (int idx = 1; idx < points; ++idx) {
                     // ランダム数の生成
                     const double Z = dist(rng), Z1 = dist(rng1);
-                    const double dW = sqrt_dt * Z;
-                    
-
+                    double dW = sqrt_dt * Z;
+                    double dWp = sqrt_dt * Z1;
+                    W_sum += dW;
+                    Wp_sum += dWp;
+                    double t = idx * dt;
                     
                     // 係数の計算
                     StateCoeff coef_em, coef_m, coef_1_5;
                     coef_em.compute(a, b, W_state);
                     coef_m.compute(a, b, W_state1);
                     coef_1_5.compute(a, b, W_state2);
-
-
                     
                     // 状態の更新
                     W_state_Y= A0(W_state, coef_em, dt, sqrt_dt, Z);
                     W_state1_Y = A1(W_state1, coef_m, dt, Z, sqrt_dt);
                     W_state2_Y = A2(W_state2, coef_1_5, dt,Z, sqrt_dt);
-                    X_b_Y = benchmark_opt(X_b, dt,Z, Z1, b, a, sqrt_dt);
+                    X_b_Y = benchmark_opt(x_0, t, W_sum, Wp_sum, b, a);
                     
-
                     dX0 += dt * phi_n(z_const, alpha, W_state_Y, dt);
                     dX1 += dt * phi_n(z_const, alpha, W_state1_Y, dt);
                     dX2 += dt * phi_n(z_const, alpha, W_state2_Y, dt);
                     dX_b += dt * phi_n(z_const, alpha, X_b_Y, dt);
 
                     //wとx_bの更新
-                    
                     W_state1 = W_state1_Y;
                     W_state2 = W_state2_Y;
                     W_state = W_state_Y;
-                    X_b = X_b_Y;
                     
 
                 }
 
                 // 期待値の累計
-      
-
                 S += dX0;
                 Sm += dX1;
                 S_1_5 += dX2;
