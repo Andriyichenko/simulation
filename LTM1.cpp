@@ -1,4 +1,4 @@
-// LTM1 with x_0=1, T=1, z=0.5, a=1, b=1,alpha=1
+// LTM1 with x_0=1, T=1, z=0.1, a=0.5, b=0.5,alpha=1
 
 #include <algorithm>  
 #include <cmath>       
@@ -42,7 +42,7 @@ struct StateCoeff {
     
     
     // 係数の計算
-inline void compute( double a, double b, double W_state, double X_b) {
+inline void compute( double a, double b, double W_state) {
         const double w_sq = W_state * W_state;
         const double W_sq_plus_1 = w_sq + 1.0;
         const double b_sq = b * b, b_quad = b * b * b, a_b = a * b;
@@ -61,12 +61,7 @@ inline void compute( double a, double b, double W_state, double X_b) {
         sigma_deriv = b_sq * W_state * sigma_inv; //sigma'
         sigma_deriv2 = b_quad * sigma_inv * sigma_inv * sigma_inv; //sigma''
 
-        // X_b関連計算
-        if (X_b != 0.0) {
-            const double X_b_sq = X_b * X_b;
-            const double X_b_sq_plus_1 = X_b_sq + 1.0;
-            sqrt_X_b_sq_plus_1 = sqrt(X_b_sq_plus_1);
-        }
+    
     }
 };
 
@@ -141,15 +136,15 @@ inline double compute_sum_state(double delta_val) {
 
 int main() {  
 
-    constexpr double z_const=0.5;
+    constexpr double z_const=0.1;//z_constは小さいほど精度が良い
     constexpr double alpha=1.0;//alpha \in (0,2) 1 と　0.1（分散が小さいが、数値漏れる） と1.9（分散が大きい）
     // 定数の定義
     constexpr double t_start = 0.0;
     constexpr double t_end = 1.0;
     constexpr double mu = 0.0;
     constexpr double sigma = 1.0;
-    constexpr double b = 1.0;
-    constexpr double a = 1.0;
+    constexpr double b = 0.5;
+    constexpr double a = 0.5;
     constexpr double b_sq = b * b;          
     constexpr double b_quad = b_sq * b_sq;
     constexpr double x_0 = 1.0;
@@ -170,7 +165,7 @@ int main() {
     // CSV ファイル名の設定
     const string dir_path = "data_source";
     system(("mkdir -p " + dir_path).c_str()); //フォルダーの確認 
-    const string csv_path = dir_path + "/LTM1_test_data.csv"; //data sourceのファイル名指定
+    const string csv_path = dir_path + "/LTM1_100_1000_error_data.csv"; //data sourceのファイル名指定
     ofstream ofs(csv_path, ios::out | ios::trunc);
     
     if (!ofs) {
@@ -179,7 +174,7 @@ int main() {
     }
     
     ofs.imbue(locale::classic());
-    ofs << "n,points,E,Em,E_1_5,Eb,A,Am,A_1_5,Ab\n";
+    ofs << "n,points,E,Em,E_1_5,A,Am,A_1_5\n";
 
     // 時間ステップ数のループ
     for (int n = 0; n <= max_n; ++n) {
@@ -196,7 +191,7 @@ int main() {
         double B = 0.0, Bm = 0.0, B_1_5 = 0.0, Bb = 0.0;
 
         // OpenMP threadの並列化
-        #pragma omp parallel reduction(+:S,Sm,S_1_5,Sb,B,Bm,B_1_5,Bb) //OpenMPのreduction句で指定の変数の和(+:)を並列計算 i.e. reduction(operator : variable_list)
+        #pragma omp parallel reduction(+:S,Sm,S_1_5,B,Bm,B_1_5) //OpenMPのreduction句で指定の変数の和(+:)を並列計算 i.e. reduction(operator : variable_list)
         {
             // 各threadは独自の乱数生成器を持つ
             mt19937 rng(42);
@@ -219,9 +214,9 @@ int main() {
                     
                     // 係数の計算
                     StateCoeff coef_em, coef_m, coef_1_5;
-                    coef_em.compute(a, b, W_state, 0.0);
-                    coef_m.compute(a, b, W_state1, 0.0);
-                    coef_1_5.compute(a, b, W_state2, 0.0);
+                    coef_em.compute(a, b, W_state);
+                    coef_m.compute(a, b, W_state1);
+                    coef_1_5.compute(a, b, W_state2);
 
                     
                     // 状態の更新
@@ -230,10 +225,10 @@ int main() {
                     W_state2_Y = A2(W_state2, coef_1_5, dt,Z);
                     X_b_Y = benchmark_opt(X_b, dt,Z, b, a);
 
-                    dX0 += dt * phi_n(z_const, alpha, W_state_Y, dt);
-                    dX1 += dt * phi_n(z_const, alpha, W_state1_Y, dt);
-                    dX2 += dt * phi_n(z_const, alpha, W_state2_Y, dt);
-                    dX_b += dt * phi_n(z_const, alpha, X_b_Y, dt);
+                    // 誤差の累計
+                    dX0 += dt * (phi_n(z_const, alpha, X_b_Y, dt) - phi_n(z_const, alpha, W_state_Y, dt));
+                    dX1 += dt * (phi_n(z_const, alpha, X_b_Y, dt) - phi_n(z_const, alpha, W_state1_Y, dt));
+                    dX2 += dt * (phi_n(z_const, alpha, X_b_Y, dt) - phi_n(z_const, alpha, W_state2_Y, dt));
 
                     //wとx_bの更新
                     W_state1 = W_state1_Y;
@@ -244,18 +239,14 @@ int main() {
                 }
 
                 // 期待値の累計
-      
-
                 S += dX0;
                 Sm += dX1;
                 S_1_5 += dX2;
-                Sb += dX_b;
 
                 // 分散用の累計
                 B += dX0 * dX0;
                 Bm += dX1 * dX1;
                 B_1_5 += dX2 * dX2;
-                Bb += dX_b * dX_b;
             }
             
            
@@ -266,13 +257,11 @@ int main() {
         A[n] = S * inv_paths;
         Am[n] = Sm * inv_paths;
         A_1_5[n] = S_1_5 * inv_paths;
-        Ab[n] = Sb * inv_paths;
         
         // 分散の計算
         E[n] = B * inv_paths - A[n] * A[n];
         Em[n] = Bm * inv_paths - Am[n] * Am[n];
         E_1_5[n] = B_1_5 * inv_paths - A_1_5[n] * A_1_5[n];
-        Eb[n] = Bb * inv_paths - Ab[n] * Ab[n];
 
         // 出力用
         cout << "-------------------------------------------------" << n << "\n";      
@@ -281,17 +270,15 @@ int main() {
         cout << setprecision(10) << "E      = " << E[n] << "\n";         // EM 法の推定値 A[n] をコンソール表示
         cout << setprecision(10) << "E_m    = " << Em[n] << "\n";         // Milstein 法の推定値 Am[n] をコンソール表示
         cout << setprecision(10) << "E_1.5  = " << E_1_5[n] << "\n";      // 1.5 次法の推定値 A_1_5[n] をコンソール表示
-        cout << setprecision(10) << "E_b    = " << Eb[n] << "\n";      // 1.5 次法の推定値 A_1_5[n] をコンソール表示
         cout << setprecision(10) << "A      = " << A[n] << "\n";         // EM 法の推定値 A[n] をコンソール表示 
         cout << setprecision(10) << "A_m    = " << Am[n] << "\n";         // Milstein 法の推定値 Am[n] をコンソール表示
         cout << setprecision(10) << "A_1.5  = " << A_1_5[n] << "\n";      // 1.5 次法の推定値 A_1_5[n] をコンソール表示
-        cout << setprecision(10) << "A_b  = " << Ab[n] << "\n";
 
         // CSVファイルに書き込み
         ofs << n << "," << points << ","  
             << fixed << setprecision(10) 
-            << E[n] << "," << Em[n] << "," << E_1_5[n] << "," << Eb[n] << ","
-            << A[n] << "," << Am[n] << "," << A_1_5[n] << "," << Ab[n] << endl;
+            << E[n] << "," << Em[n] << "," << E_1_5[n] <<  ","
+            << A[n] << "," << Am[n] << "," << A_1_5[n] << endl;
     }
 
     ofs.close();

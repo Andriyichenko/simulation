@@ -79,7 +79,6 @@ inline double A0(double W_state, const StateCoeff& coef,
 inline double A1(double W_state, const StateCoeff& coef,
                                    double dt, double Z, double sqrt_dt) {
 
-    const double dt_sq = dt * dt;
     const double Z_sq = Z * Z;
     return W_state + coef.drift * dt + coef.sigma * sqrt_dt * Z + 
            0.5 * coef.sigma_deriv * coef.sigma * (Z_sq * dt - dt);
@@ -119,13 +118,11 @@ inline double benchmark_opt(double x_0, double t, double dW, double dW_prime, do
     const double beta_first = (exp_2at - 1) * t_2a_inv;
     const double beta_t = sqrt(beta_first - (alpha_t * alpha_t));
 
-    return exp_at * Y_0 + b * (alpha_t * dW + beta_t * dW_prime);
+    return sinh(exp_at * Y_0 + b * (alpha_t * dW + beta_t * dW_prime));
 
 }
 
-// inline double compute_sum_state(double delta_val) {
-//     return delta_val * (1.0 - 0.5 * delta_val);  
-// }
+
 
 
 
@@ -136,7 +133,7 @@ inline double benchmark_opt(double x_0, double t, double dW, double dW_prime, do
 
 int main() {  
 
-    constexpr double z_const=1.0;
+    constexpr double z_const=0.5;//z_constは小さいほど精度が良い
     constexpr double alpha=1.0;//alpha \in (0,2) 1 と　0.1（分散が小さいが、数値漏れる） と1.9（分散が大きい）
     // 定数の定義
     constexpr double t_start = 0.0;
@@ -148,7 +145,7 @@ int main() {
     constexpr double b_sq = b * b;          
     constexpr double b_quad = b_sq * b_sq;
     constexpr double x_0 = 1.0;
-    constexpr int max_n = 10;
+    constexpr int max_n = 9;
     
 
 
@@ -165,7 +162,7 @@ int main() {
     // CSV ファイル名の設定
     const string dir_path = "data_source";
     system(("mkdir -p " + dir_path).c_str()); //フォルダーの確認 
-    const string csv_path = dir_path + "/LTM2_test_data.csv"; //data sourceのファイル名指定
+    const string csv_path = dir_path + "/LTM2_100_1000_error_data.csv"; //data sourceのファイル名指定
     ofstream ofs(csv_path, ios::out | ios::trunc);
     
     if (!ofs) {
@@ -174,11 +171,11 @@ int main() {
     }
     
     ofs.imbue(locale::classic());
-    ofs << "n,points,E,Em,E_1_5,Eb,A,Am,A_1_5,Ab\n";
+    ofs << "n,points,E,Em,E_1_5,A,Am,A_1_5\n";
 
     // 時間ステップ数のループ
     for (int n = 0; n <= max_n; ++n) {
-        const int points = 100 + (n * 10); //(10-50-100-200-400-600-800-1000)
+        const int points = 100 + (n * 100); //(10-50-100-200-400-600-800-1000)
         const int paths = 8 * points * points;
         
         const double dt = (t_end - t_start) / (points - 1);
@@ -191,7 +188,7 @@ int main() {
         double B = 0.0, Bm = 0.0, B_1_5 = 0.0, Bb = 0.0;
 
         // OpenMP threadの並列化
-        #pragma omp parallel reduction(+:S,Sm,S_1_5,Sb,B,Bm,B_1_5,Bb) //OpenMPのreduction句で指定の変数の和(+:)を並列計算 i.e. reduction(operator : variable_list)
+        #pragma omp parallel reduction(+:S,Sm,S_1_5,B,Bm,B_1_5) //OpenMPのreduction句で指定の変数の和(+:)を並列計算 i.e. reduction(operator : variable_list)
         {
             mt19937 rng(42);
             mt19937 rng1(27);
@@ -200,20 +197,15 @@ int main() {
             for (int p = 0; p < paths; ++p) {
                 // 変数の初期化
                 double W_state = x_0, W_state1 = x_0, W_state2 = x_0;
-                double sum_W_state = 0.0, sum_W_state1 = 0.0, sum_W_state2 = 0.0, sum_W_state_X_b = 0.0;
                 double X_b = x_0,X_b_Y=x_0,W_state_Y=x_0,W_state1_Y=x_0,W_state2_Y=x_0;
-                double dX0 = 0.0, dX_b = 0.0, dX1 = 0.0, dX2 = 0.0;
-                double W_sum = 0.0, Wp_sum = 0.0; // 独立したブラウン運動の和
+                double dX0 = 0.0, dX1 = 0.0, dX2 = 0.0;
 
                 for (int idx = 1; idx < points; ++idx) {
                     // ランダム数の生成
                     const double Z = dist(rng), Z1 = dist(rng1);
                     double dW = sqrt_dt * Z;
                     double dWp = sqrt_dt * Z1;
-                    W_sum += dW;
-                    Wp_sum += dWp;
-                    double t = idx * dt;
-                    
+   
                     // 係数の計算
                     StateCoeff coef_em, coef_m, coef_1_5;
                     coef_em.compute(a, b, W_state);
@@ -224,17 +216,20 @@ int main() {
                     W_state_Y= A0(W_state, coef_em, dt, sqrt_dt, Z);
                     W_state1_Y = A1(W_state1, coef_m, dt, Z, sqrt_dt);
                     W_state2_Y = A2(W_state2, coef_1_5, dt,Z, sqrt_dt);
-                    X_b_Y = benchmark_opt(x_0, t, W_sum, Wp_sum, b, a);
-                    
-                    dX0 += dt * phi_n(z_const, alpha, W_state_Y, dt);
-                    dX1 += dt * phi_n(z_const, alpha, W_state1_Y, dt);
-                    dX2 += dt * phi_n(z_const, alpha, W_state2_Y, dt);
-                    dX_b += dt * phi_n(z_const, alpha, X_b_Y, dt);
+
+                    //benchmarkの更新
+                    X_b_Y = benchmark_opt(X_b, dt, dW, dWp, b, a);
+
+                    // 誤差の累計
+                    dX0 += dt * (phi_n(z_const, alpha, X_b_Y, dt) - phi_n(z_const, alpha, W_state_Y, dt));
+                    dX1 += dt * (phi_n(z_const, alpha, X_b_Y, dt) - phi_n(z_const, alpha, W_state1_Y, dt));
+                    dX2 += dt * (phi_n(z_const, alpha, X_b_Y, dt) - phi_n(z_const, alpha, W_state2_Y, dt));
 
                     //wとx_bの更新
                     W_state1 = W_state1_Y;
                     W_state2 = W_state2_Y;
                     W_state = W_state_Y;
+                    X_b = X_b_Y;
                     
 
                 }
@@ -243,13 +238,11 @@ int main() {
                 S += dX0;
                 Sm += dX1;
                 S_1_5 += dX2;
-                Sb += dX_b;
 
                 // 分散用の累計
                 B += dX0 * dX0;
                 Bm += dX1 * dX1;
                 B_1_5 += dX2 * dX2;
-                Bb += dX_b * dX_b;
             }
             
            
@@ -275,17 +268,15 @@ int main() {
         cout << setprecision(10) << "E0      = " << E[n] << "\n";         // EM 法の推定値 A[n] をコンソール表示
         cout << setprecision(10) << "E1      = " << Em[n] << "\n";         // Milstein 法の推定値 Am[n] をコンソール表示
         cout << setprecision(10) << "E2      = " << E_1_5[n] << "\n";      // 1.5 次法の推定値 A_1_5[n] をコンソール表示
-        cout << setprecision(10) << "E_b     = " << Eb[n] << "\n";      // 1.5 次法の推定値 A_1_5[n] をコンソール表示
         cout << setprecision(10) << "A0      = " << A[n] << "\n";         // EM 法の推定値 A[n] をコンソール表示
         cout << setprecision(10) << "A1      = " << Am[n] << "\n";         // Milstein 法の推定値 Am[n] をコンソール表示
         cout << setprecision(10) << "A2      = " << A_1_5[n] << "\n";      // 1.5 次法の推定値 A_1_5[n] をコンソール表示
-        cout << setprecision(10) << "A_b     = " << Ab[n] << "\n";
 
         // CSVファイルに書き込み
         ofs << n << "," << points << ","  
             << fixed << setprecision(10) 
-            << E[n] << "," << Em[n] << "," << E_1_5[n] << "," << Eb[n] << ","
-            << A[n] << "," << Am[n] << "," << A_1_5[n] << "," << Ab[n] << endl;
+            << E[n] << "," << Em[n] << "," << E_1_5[n] << ","
+            << A[n] << "," << Am[n] << "," << A_1_5[n] << endl;
     }
 
     ofs.close();
