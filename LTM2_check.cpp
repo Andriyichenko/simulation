@@ -56,7 +56,7 @@ inline void compute( double a, double b, double W_state) {
         
 
 
-            // sigma(x)
+        // sigma(x)
         if (fabs(b) < 1e-12) {
             sigma = 0.0;
             sigma_inv = 0.0;
@@ -132,9 +132,6 @@ inline double benchmark_opt(double x_0, double dt,double dW, double dW_prime, do
 
 }
 
-// inline double compute_sum_state(double delta_val) {
-//     return delta_val * (1.0 - 0.5 * delta_val);  
-// }
 
 
 

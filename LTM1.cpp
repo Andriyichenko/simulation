@@ -54,12 +54,20 @@ inline void compute( double a, double b, double W_state) {
         drift = 0.5 * b_sq * W_state + 0.5 * a_b * sqrt_W_sq_plus_1; //a_x
         drift_deriv = 0.5 * b_sq + (0.5 * a_b * W_state / sqrt_W_sq_plus_1); //a_x'
         
-        //sigma(x)の計算部分
-        sigma = b * sqrt_W_sq_plus_1; //sigma
-        sigma_inv = 1.0 / sigma;  //1/sigma
-        sigma_sq = sigma * sigma; //sigma^2
-        sigma_deriv = b_sq * W_state * sigma_inv; //sigma'
-        sigma_deriv2 = b_quad * sigma_inv * sigma_inv * sigma_inv; //sigma''
+        // sigma(x)
+        if (fabs(b) < 1e-12) {
+            sigma = 0.0;
+            sigma_inv = 0.0;
+            sigma_sq = 0.0;
+            sigma_deriv = 0.0;
+            sigma_deriv2 = 0.0;
+        } else {
+            sigma = b * sqrt_W_sq_plus_1;
+            sigma_inv = 1.0 / sigma;
+            sigma_sq = sigma * sigma;
+            sigma_deriv = b * b * W_state * sigma_inv;
+            sigma_deriv2 = b * b * b * sigma_inv * sigma_inv * sigma_inv;
+        }
 
     
     }

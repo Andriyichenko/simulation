@@ -42,7 +42,7 @@ struct StateCoeff {
     
     
     // 係数の計算
-inline void compute( double a, double b, double W_state, double X_b) {
+inline void compute( double a, double b, double W_state) {
         const double w_sq = W_state * W_state;
         const double W_sq_plus_1 = w_sq + 1.0;
         const double b_sq = b * b, b_quad = b * b * b, a_b = a * b;
@@ -61,12 +61,7 @@ inline void compute( double a, double b, double W_state, double X_b) {
         sigma_deriv = b_sq * W_state * sigma_inv; //sigma'
         sigma_deriv2 = b_quad * sigma_inv * sigma_inv * sigma_inv; //sigma''
 
-        // X_b関連計算
-        if (X_b != 0.0) {
-            const double X_b_sq = X_b * X_b;
-            const double X_b_sq_plus_1 = X_b_sq + 1.0;
-            sqrt_X_b_sq_plus_1 = sqrt(X_b_sq_plus_1);
-        }
+
     }
 };
 
@@ -219,9 +214,9 @@ int main() {
                     
                     // 係数の計算
                     StateCoeff coef_em, coef_m, coef_1_5;
-                    coef_em.compute(a, b, W_state, 0.0);
-                    coef_m.compute(a, b, W_state1, 0.0);
-                    coef_1_5.compute(a, b, W_state2, 0.0);
+                    coef_em.compute(a, b, W_state);
+                    coef_m.compute(a, b, W_state1);
+                    coef_1_5.compute(a, b, W_state2);
 
                     
                     // 状態の更新
