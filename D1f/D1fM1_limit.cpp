@@ -118,8 +118,8 @@ inline double benchmark(double X_b, double dt, double Z, double b, double a) {
 
 }
 
-double f(double x) {
-    return (x < -1.0) ? -1.0 : (x > 1.0) ? 1.0 : x;
+inline double f(double x, double min_val = 0.0, double max_val = 4.0) {
+    return max(min_val, min(x, max_val));
 }
 
 
@@ -170,7 +170,7 @@ int main() {
 
     // 時間ステップ数のループ
     for (int n = 0; n <= max_n; ++n) {
-        const int points = 100 + 100 * n; //(10-50-100-200-400-600-800-1000)
+        const int points = 100 + (n * 100); //(10-50-100-200-400-600-800-1000)
         const int paths = 8 * points * points;
         
         const double dt = (t_end - t_start) / (points - 1);
@@ -194,19 +194,19 @@ int main() {
             mt19937 rng(42);
             mt19937 rng1(30);
             normal_distribution<double> dist(mu, sigma);
-            
-            #pragma omp for schedule(dynamic, 64) nowait
+
+           #pragma omp for schedule(static) nowait
             for (int p = 0; p < paths; ++p) {
                 // 変数の初期化
-                double X_b = x_0,X_b_Y=x_0;
-                double dX_b = 0.0;
+                    double I_W_stateb = 0.0;
+                    double I_quad_W_stateb = 0.0;
+                    double X_b = x_0, X_b_Y = x_0;
                 
                 for (int idx = 1; idx < points; ++idx) {
                     // ランダム数の生成
                     const double Z = dist(rng);
                     const double Z1 = dist(rng1);
                     double Z1_sqrt_dt = Z1 * sqrt_dt;
-                    double dW = sqrt_dt * Z;
              
                     
                     // 係数の計算
@@ -221,43 +221,45 @@ int main() {
                     
                     // 積分項の更新
                     I_W_stateb += 0.5 * sp_W_stateb * Z1_sqrt_dt;
-                    I_quad_W_stateb += sp_W_stateb * sp_W_stateb * dt;
+                    I_quad_W_stateb += 0.25 * sp_W_stateb * sp_W_stateb * dt;
                     X_b = X_b_Y;
+
 
 
                 }
 
-                // 指数項の計算
-                double inner_b = 1.0 - exp(-I_W_stateb - 0.5 * I_quad_W_stateb);
-                double inner_a = f(I_W_stateb + 0.5 * I_quad_W_stateb);
-                double limit = inner_a * inner_b;
+            // 指数項の計算
+            double inner_b = 1.0 - exp(-I_W_stateb - 0.5 * I_quad_W_stateb);
+            double inner_a = f(I_W_stateb + 0.5 * I_quad_W_stateb );
+            double limit = inner_a * inner_b;
+    
 
-                // 誤差の累計
-                Sb += limit;
-                Bb += limit * limit;
+            // 誤差の累計
+            Sb += limit;
+            Bb += limit * limit;
 
             }
            
         } // end of parallel region
 
-        // 期待値の計算
-        const double inv_paths = 1.0 / paths;
-        Ab[n] = Sb * inv_paths;
-        
-        // 分散の計算
-        Eb[n] = Bb * inv_paths - Ab[n] * Ab[n];
+    // 期待値の計算
+    const double inv_paths = 1.0 / paths;
+    Ab[n] = Sb * inv_paths;
+    
+    // 分散の計算
+    Eb[n] = Bb * inv_paths - Ab[n] * Ab[n];
 
-        // 出力用
-        cout << "-------------------------------------------------" << n << "\n";      
-        cout << setprecision(10) << "points = " << points << "\n";       
-        cout << "-------------------------------------------------" <<  "\n";      
-        cout << setprecision(10) << "Eb     = " << Eb[n] << "\n";     
-        cout << setprecision(10) << "Ab     = " << Ab[n] << "\n";    
+    // 出力用
+    cout << "-------------------------------------------------" << n << "\n";      
+    cout << setprecision(10) << "points = " << points << "\n";       
+    cout << "-------------------------------------------------" <<  "\n";      
+    cout << setprecision(10) << "Eb     = " << Eb[n] << "\n";     
+    cout << setprecision(10) << "Ab     = " << Ab[n] << "\n";    
 
-        // CSVファイルに書き込み
-        ofs << n << "," << points << ","  
-            << fixed << setprecision(10) 
-            << Eb[n] << "," << Ab[n] << endl;
+    // CSVファイルに書き込み
+    ofs << n << "," << points << ","  
+        << fixed << setprecision(10) 
+        << Eb[n] << "," << Ab[n] << endl;
     }
 
     ofs.close();

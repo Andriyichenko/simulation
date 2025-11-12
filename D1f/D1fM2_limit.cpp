@@ -183,9 +183,7 @@ int main() {
         // パラメータ初期化
         double Sb = 0.0, Bb = 0.0;
 
-        // 積分変数の初期化
-        double I_W_stateb = 0.0;
-        double I_quad_W_stateb = 0.0;
+
     
 
 
@@ -202,7 +200,8 @@ int main() {
             for (int p = 0; p < paths; ++p) {
                 // 変数の初期化
                 double X_b = x_0,X_b_Y=x_0;
-                double dX_b = 0.0;
+                double I_W_stateb = 0.0;
+                double I_quad_W_stateb = 0.0;
                 
                 for (int idx = 1; idx < points; ++idx) {
                     // ランダム数の生成
@@ -236,7 +235,7 @@ int main() {
 
                 // 指数項の計算
                 double inner_b = 1.0 - exp(-I_W_stateb - 0.5 * I_quad_W_stateb);
-                double inner_a = f(I_W_stateb + 0.5 * I_quad_W_stateb);
+                double inner_a = 0.25 * f(I_W_stateb + 0.5 * I_quad_W_stateb);
                 double limit = inner_a * inner_b;
 
                 // 誤差の累計

@@ -206,7 +206,7 @@ int main() {
     // CSV ファイル名の設定
     const string dir_path = "../data_source";
     system(("mkdir -p " + dir_path).c_str()); //フォルダーの確認 
-    const string csv_path = dir_path + "/D1fM1_check_100_1000_data.csv"; //data sourceのファイル名指定
+    const string csv_path = dir_path + "/D1fM1_check_100_1000_data_test.csv"; //data sourceのファイル名指定
     ofstream ofs(csv_path, ios::out | ios::trunc);
     
     if (!ofs) {
@@ -290,14 +290,14 @@ int main() {
 
                 }
 
-                    S  += dX0;       // EM 法のパスごとの最大二乗誤差 dX を総和 S に加算
-                    Sm += dX1;      // Milstein 法のパスごとの最大二乗誤差 dXm を総和 Sm に加算
-                    S_1_5 += dX2; // 1.5 次法のパスごとの最大二乗誤差 dX_1_5 を総和 S_1_5 に加算
-                    Sb += dX_b;   // benchmark 法のパスごとの最大二乗誤差 dX_bb を総和 Sb に加算
-                    B += dX0 * dX0;        // EM 法の期待値推定 B[n] = S / paths を計算
-                    Bm += dX1 * dX1;     // Milstein 法の期待値推定 Bm[n] = Sm / paths を計算
-                    B_1_5 += dX2 * dX2;  // 1.5 次法の期待値推定 B_1_5[n] = S_1_5 / paths を計算
-                    Bb += dX_b * dX_b;  // benchmark 法の期待値推定 Bb[n] = Sb / paths を計算
+            S  += dX0;       // EM 法のパスごとの最大二乗誤差 dX を総和 S に加算
+            Sm += dX1;      // Milstein 法のパスごとの最大二乗誤差 dXm を総和 Sm に加算
+            S_1_5 += dX2; // 1.5 次法のパスごとの最大二乗誤差 dX_1_5 を総和 S_1_5 に加算
+            Sb += dX_b;   // benchmark 法のパスごとの最大二乗誤差 dX_bb を総和 Sb に加算
+            B += dX0 * dX0;        // EM 法の期待値推定 B[n] = S / paths を計算
+            Bm += dX1 * dX1;     // Milstein 法の期待値推定 Bm[n] = Sm / paths を計算
+            B_1_5 += dX2 * dX2;  // 1.5 次法の期待値推定 B_1_5[n] = S_1_5 / paths を計算
+            Bb += dX_b * dX_b;  // benchmark 法の期待値推定 Bb[n] = Sb / paths を計算
 
             
            
