@@ -121,7 +121,7 @@ inline double benchmark(double X_b, double t, double dW, double dW1, double b, d
 }
 
 double f(double x) {
-    return (x < -1.0) ? -1.0 : (x > 1.0) ? 1.0 : x;
+    return (x < 0.0) ? 0.0 : (x > 4.0) ? 4.0 : x;
 }
 
 

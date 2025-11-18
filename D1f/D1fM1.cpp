@@ -30,9 +30,10 @@ inline double delta_1(double sigma_prime, double sigma, double dt,
     const double sigma_inv = 1.0 / sigma;
     const double diff_sigma_inv = diff * sigma_inv;
     const double diff_sq = diff * diff;
-    
-    
-    const double A = diff_sq * diff * sigma_inv * sigma_inv * sigma_inv * dt;
+    const double dt_inv = 1.0 / dt;
+
+
+    const double A = diff_sq * diff * sigma_inv * sigma_inv * sigma_inv * dt_inv;
     const double B = diff_sigma_inv;
     
     return 0.5 * sigma_prime * (A - 3.0 * B);

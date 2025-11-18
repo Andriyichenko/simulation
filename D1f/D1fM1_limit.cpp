@@ -118,7 +118,7 @@ inline double benchmark(double X_b, double dt, double Z, double b, double a) {
 
 }
 
-inline double f(double x, double min_val = 0.0, double max_val = 4.0) {
+inline double f(double x, double min_val = -4.0, double max_val = 0.0) {
     return max(min_val, min(x, max_val));
 }
 

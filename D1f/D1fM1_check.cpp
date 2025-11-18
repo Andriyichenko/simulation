@@ -30,9 +30,10 @@ inline double delta_1(double sigma_prime, double sigma, double dt,
     const double sigma_inv = 1.0 / sigma;
     const double diff_sigma_inv = diff * sigma_inv;
     const double diff_sq = diff * diff;
+    const double dt_inv = 1.0 / dt;
     
     
-    const double A = diff_sq * diff * sigma_inv * sigma_inv * sigma_inv * dt;
+    const double A = diff_sq * diff * sigma_inv * sigma_inv * sigma_inv * dt_inv;
     const double B = diff_sigma_inv;
     
     return 0.5 * sigma_prime * (A - 3.0 * B);
@@ -169,7 +170,7 @@ inline double compute_sum_state(double delta_val) {
     return delta_val - 0.5 * delta_val * delta_val;  
 }
 
-inline double f(double x, double min_val = -1.0, double max_val = 1.0) {
+inline double f(double x, double min_val = 0.0, double max_val = 100.0) {
     return std::max(min_val, std::min(x, max_val));
 }
 
