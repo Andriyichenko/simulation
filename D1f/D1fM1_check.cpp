@@ -166,12 +166,8 @@ inline double benchmark(double X_b, double dt, double Z, double b, double a) {
 
 }
 
-inline double compute_sum_state(double delta_val) {
-    return delta_val - 0.5 * delta_val * delta_val;  
-}
-
 inline double f(double x, double min_val = 0.0, double max_val = 100.0) {
-    return std::max(min_val, std::min(x, max_val));
+    return max(min_val, min(x, max_val));
 }
 
 // ========================================
@@ -207,7 +203,7 @@ int main() {
     // CSV ファイル名の設定
     const string dir_path = "../data_source";
     system(("mkdir -p " + dir_path).c_str()); //フォルダーの確認 
-    const string csv_path = dir_path + "/D1fM1_check_100_1000_data_test.csv"; //data sourceのファイル名指定
+    const string csv_path = dir_path + "/D1fM1_check_100_1000_data.csv"; //data sourceのファイル名指定
     ofstream ofs(csv_path, ios::out | ios::trunc);
     
     if (!ofs) {
@@ -245,8 +241,9 @@ int main() {
                 // 変数の初期化
                 double W_state = x_0, W_state1 = x_0, W_state2 = x_0;
                 double X_b = x_0,X_b_Y=x_0,W_state_Y=x_0,W_state1_Y=x_0,W_state2_Y=x_0;
-                    double dX0 = 0.0, dX_b = 0.0, dX1 = 0.0, dX2 = 0.0;
-                    double delta_W = 0.0, delta_W1 = 0.0, delta_W2 = 0.0, delta_Xb = 0.0;
+                double delta_W = 0.0, delta_W1 = 0.0, delta_W2 = 0.0, delta_Xb = 0.0;
+                double dX0 = 0.0, dX_b = 0.0, dX1 = 0.0, dX2 = 0.0;
+                double sum_W = 0.0, sum_W1 = 0.0, sum_W2 = 0.0, sum_Xb = 0.0;
                 
                 for (int idx = 1; idx < points; ++idx) {
                     // ランダム数の生成
@@ -276,12 +273,11 @@ int main() {
                                                     dt, W_state2, W_state2_Y, coef_1_5.drift);
                     delta_Xb = delta_1(coef_X_b.sigma_deriv, coef_X_b.sigma, 
                                                     dt, X_b, X_b_Y, coef_X_b.drift);
-
-
-                    dX0  += f(compute_sum_state(delta_W));    // EM 法の最大二乗誤差を更新: dX = max(dX, diff^2)
-                    dX1 += f(compute_sum_state(delta_W1));   // Milstein 法の最大二乗誤差を更新: dXm = max(dXm, diffm^2)
-                    dX2 += f(compute_sum_state(delta_W2)); // 1.5 法の最大二乗誤差を更新: dX_1_5 = max(dX_1_5, diff_1_5^2)
-                    dX_b +=  f(compute_sum_state(delta_Xb)); // benchmark 法の最大二乗誤差を更新: dX_bb = max(dX_bb, diff_bb^2)
+                    
+                    sum_W += delta_W - 0.5 * delta_W * delta_W;
+                    sum_W1 += delta_W1 - 0.5 * delta_W1 * delta_W1;
+                    sum_W2 += delta_W2 - 0.5 * delta_W2 * delta_W2;
+                    sum_Xb += delta_Xb - 0.5 * delta_Xb * delta_Xb;
 
                     W_state = W_state_Y;
                     W_state1 = W_state1_Y;
@@ -290,20 +286,26 @@ int main() {
 
 
                 }
+             
+            dX0  = f(sum_W);    
+            dX1 = f(sum_W1);   
+            dX2 = f(sum_W2); 
+            dX_b =  f(sum_Xb);    
 
-            S  += dX0;       // EM 法のパスごとの最大二乗誤差 dX を総和 S に加算
-            Sm += dX1;      // Milstein 法のパスごとの最大二乗誤差 dXm を総和 Sm に加算
-            S_1_5 += dX2; // 1.5 次法のパスごとの最大二乗誤差 dX_1_5 を総和 S_1_5 に加算
-            Sb += dX_b;   // benchmark 法のパスごとの最大二乗誤差 dX_bb を総和 Sb に加算
-            B += dX0 * dX0;        // EM 法の期待値推定 B[n] = S / paths を計算
-            Bm += dX1 * dX1;     // Milstein 法の期待値推定 Bm[n] = Sm / paths を計算
-            B_1_5 += dX2 * dX2;  // 1.5 次法の期待値推定 B_1_5[n] = S_1_5 / paths を計算
-            Bb += dX_b * dX_b;  // benchmark 法の期待値推定 Bb[n] = Sb / paths を計算
+            S  += dX0;       
+            Sm += dX1;      
+            S_1_5 += dX2; 
+            Sb += dX_b;   
+            B += dX0 * dX0;        
+            Bm += dX1 * dX1;     
+            B_1_5 += dX2 * dX2; 
+            Bb += dX_b * dX_b;  
+            }
 
             
            
         } // end of parallel region
-    }
+    
 
         // 期待値の計算
         const double inv_paths = 1.0 / paths;

@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monte Carlo Expectation & CI Visualizer</title>
+    <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+    <script src="https://unpkg.com/prop-types@15.8.1/prop-types.min.js"></script>
+    <script src="https://unpkg.com/recharts@2.10.0/umd/Recharts.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        body { background-color: #f8fafc; font-family: -apple-system, system-ui, sans-serif; }
+        .card { background: white; border-radius: 10px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); padding: 24px; margin-bottom: 24px; }
+        .table-dense td, .table-dense th { padding: 0.5rem; text-align: right; font-feature-settings: "tnum"; }
+        .table-dense th { text-align: center; background-color: #f1f5f9; }
+        /* Loader */
+        .spinner { border: 4px solid #f3f3f3; border-top: 4px solid #3b82f6; border-radius: 50%; width: 24px; height: 24px; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useCallback } = React;
+        const { ComposedChart, LineChart, Line, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ErrorBar } = window.Recharts;
+
+        // --- Math & Logic (Ported from C++) ---
+
+        const sgn = (x) => (x > 0) - (x < 0);
+
+        const f = (x, min_val = 0.0, max_val = 100.0) => {
+            return Math.max(min_val, Math.min(x, max_val));
+        };
+
+        const generateGaussian = () => {
+            let u = 0, v = 0;
+            while(u === 0) u = Math.random(); 
+            while(v === 0) v = Math.random();
+            return Math.sqrt( -2.0 * Math.log( u ) ) * Math.cos( 2.0 * Math.PI * v );
+        };
+
+        class StateCoeff {
+            constructor() {
+                this.drift = 0; this.drift_deriv = 0;
+                this.sigma = 0; this.sigma_deriv = 0; this.sigma_deriv2 = 0;
+                this.sigma_sq = 0;
+            }
+            compute(a, b, W_state) {
+                const w_sq = W_state * W_state;
+                const sqrt_W_sq_plus_1 = Math.sqrt(w_sq + 1.0);
+                const b_sq = b * b;
+                const a_b = a * b;
+
+                this.drift = 0.5 * b_sq * W_state + 0.5 * a_b * sqrt_W_sq_plus_1;
+                this.drift_deriv = 0.5 * b_sq + (0.5 * a_b * W_state / sqrt_W_sq_plus_1);
+                
+                if (Math.abs(b) < 1e-12) {
+                    this.sigma = 0.0; this.sigma_inv = 0.0; this.sigma_sq = 0.0;
+                    this.sigma_deriv = 0.0; this.sigma_deriv2 = 0.0;
+                } else {
+                    this.sigma = b * sqrt_W_sq_plus_1;
+                    this.sigma_inv = 1.0 / this.sigma;
+                    this.sigma_sq = this.sigma * this.sigma;
+                    this.sigma_deriv = b * b * W_state * this.sigma_inv;
+                    this.sigma_deriv2 = b * b * b * Math.pow(this.sigma_inv, 3);
+                }
+            }
+        }
+
+        const A0 = (W_state, coef, dt, Z) => {
+            return W_state + coef.drift * dt + coef.sigma * Math.sqrt(dt) * Z;
+        };
+
+        const A1 = (W_state, coef, dt, Z) => {
+            const sqrt_dt = Math.sqrt(dt);
+            const Z_sq = Z * Z;
+            return W_state + coef.drift * dt + coef.sigma * sqrt_dt * Z + 
+                   0.5 * coef.sigma_deriv * coef.sigma * (Z_sq * dt - dt);
+        };
+
+        const A2 = (W_state, coef, dt, Z) => {
+            const Z_sq = Z * Z;
+            const sqrt_dt = Math.sqrt(dt);
+            const dW = Z * sqrt_dt;
+            const dW_cube = Math.pow(dW, 3);
+            const base = W_state + coef.drift * dt + coef.sigma * dW;
+            const milstein_term = 0.5 * coef.sigma_deriv * coef.sigma * (Z_sq * dt - dt);
+            const mixed_deriv = 0.5 * coef.drift_deriv * coef.sigma + 
+                                0.5 * coef.sigma_deriv * coef.drift + 
+                                0.25 * coef.sigma_deriv2 * coef.sigma_sq;
+            const term3 = mixed_deriv * dW * dt;
+            const triple_deriv = coef.sigma_deriv2 * coef.sigma_sq + 
+                                 coef.sigma_deriv * coef.sigma_deriv * coef.sigma;
+            const term4 = triple_deriv * (dW_cube - 3 * dW * dt) / 6.0;
+            return base + milstein_term + term3 + term4;
+        };
+
+        const benchmark = (X_b, dt, Z, b, a) => {
+            const asinh_Xb = Math.asinh(X_b);
+            return Math.sinh(asinh_Xb + 0.5 * a * b * dt + b * Math.sqrt(dt) * Z);
+        };
+
+        const delta_1 = (sigma_prime, sigma, dt, x, y, mu) => {
+            const diff = y - x - mu * dt;
+            if (Math.abs(sigma) < 1e-12) return 0.0;
+            const sigma_inv = 1.0 / sigma;
+            const diff_sigma_inv = diff * sigma_inv;
+            const diff_sq = diff * diff;
+            const dt_inv = 1.0 / dt;
+            const A = diff_sq * diff * Math.pow(sigma_inv, 3) * dt_inv;
+            const B = diff_sigma_inv;
+            return 0.5 * sigma_prime * (A - 3.0 * B);
+        };
+
+        // --- Custom Tooltips ---
+        const CustomTooltip = ({ active, payload, label }) => {
+            if (active && payload && payload.length) {
+                return (
+                    <div className="bg-white p-3 border rounded shadow text-sm">
+                        <p className="font-bold mb-2">{`Points: ${label}`}</p>
+                        {payload.map((entry, index) => (
+                            <div key={index} style={{ color: entry.color }}>
+                                <span className="font-semibold">{entry.name}: </span>
+                                {entry.value.toFixed(5)}
+                                {entry.payload[`${entry.dataKey}Error`] && (
+                                    <span className="text-xs ml-1 text-gray-500">
+                                        (±{entry.payload[`${entry.dataKey}Error`][1].toFixed(4)})
+                                    </span>
+                                )}
+                            </div>
+                        ))}
+                    </div>
+                );
+            }
+            return null;
+        };
+
+        const ConfidenceIntervalTooltip = ({ active, payload, label }) => {
+             if (active && payload && payload.length && payload[0].payload) {
+                 const data = payload[0].payload; // Access full data object for this point
+                 const uniqueGroups = [
+                     { id: "Euler", color: "#3b82f6" }, 
+                     { id: "Milstein", color: "#10b981" }, 
+                     { id: "Order15", color: "#f59e0b" }, 
+                     { id: "Benchmark", color: "#ef4444" }
+                 ];
+                
+                return (
+                    <div className="bg-white p-3 border rounded shadow text-sm">
+                        <p className="font-bold mb-2 text-gray-700 border-b pb-1">{`Points: ${label}`}</p>
+                        <div className="grid grid-cols-3 gap-x-4 gap-y-1 text-xs">
+                            <div className="font-bold text-gray-400">Type</div>
+                            <div className="font-bold text-gray-400 text-right">Mean</div>
+                            <div className="font-bold text-gray-400 text-right">95% CI Bounds</div>
+                            
+                            {uniqueGroups.map(group => {
+                                const type = group.id;
+                                const meanVal = data[type];
+                                const upperVal = data[`${type}Upper`];
+                                const lowerVal = data[`${type}Lower`];
+                                
+                                return (
+                                    <React.Fragment key={type}>
+                                        <div className="font-semibold" style={{color: group.color}}>{type}</div>
+                                        <div className="text-right font-mono">{meanVal !== undefined ? meanVal.toFixed(4) : '-'}</div>
+                                        <div className="text-right text-gray-500 font-mono">
+                                            [{lowerVal?.toFixed(4)}, {upperVal?.toFixed(4)}]
+                                        </div>
+                                    </React.Fragment>
+                                );
+                            })}
+                        </div>
+                    </div>
+                );
+            }
+            return null;
+        }
+
+        // --- Main Application ---
+
+        const App = () => {
+            // Parameters
+            const [params, setParams] = useState({
+                x0: 1.0, T: 1.0, a: 0.5, b: 0.5,
+                max_n: 3,           
+                points_base: 100,   
+                points_inc: 100,
+                paths_mult: 0.5,    
+                paths_cap: 50000    
+            });
+            
+            const [results, setResults] = useState([]);
+            const [calculating, setCalculating] = useState(false);
+            const [progress, setProgress] = useState("");
+
+            const runSimulation = async () => {
+                setCalculating(true);
+                setResults([]);
+                
+                setTimeout(() => {
+                    const newResults = [];
+                    const { x0, T, a, b, max_n, points_base, points_inc, paths_mult, paths_cap } = params;
+
+                    for (let n = 0; n <= max_n; n++) {
+                        const points = points_base + points_inc * n;
+                        let raw_paths = Math.floor(paths_mult * points * points);
+                        let paths = Math.min(paths_cap, raw_paths);
+                        paths = Math.max(100, paths);
+                        
+                        setProgress(`Simulating n=${n}, points=${points}, paths=${paths} (Cap: ${paths_cap})...`);
+
+                        const dt = T / (points - 1);
+                        
+                        let S = 0, Sm = 0, S_15 = 0, Sb = 0;
+                        let B = 0, Bm = 0, B_15 = 0, Bb = 0;
+
+                        const coef_em = new StateCoeff();
+                        const coef_m = new StateCoeff();
+                        const coef_15 = new StateCoeff();
+                        const coef_Xb = new StateCoeff();
+
+                        for (let p = 0; p < paths; p++) {
+                            let W = x0, Wm = x0, W15 = x0, Xb = x0;
+                            let sum_W = 0, sum_Wm = 0, sum_W15 = 0, sum_Xb = 0;
+
+                            for (let i = 1; i < points; i++) {
+                                const Z = generateGaussian();
+                                
+                                coef_em.compute(a, b, W);
+                                coef_m.compute(a, b, Wm);
+                                coef_15.compute(a, b, W15);
+                                coef_Xb.compute(a, b, Xb);
+
+                                const W_next = A0(W, coef_em, dt, Z);
+                                const Wm_next = A1(Wm, coef_m, dt, Z);
+                                const W15_next = A2(W15, coef_15, dt, Z);
+                                const Xb_next = benchmark(Xb, dt, Z, b, a);
+
+                                const dW = delta_1(coef_em.sigma_deriv, coef_em.sigma, dt, W, W_next, coef_em.drift);
+                                const dWm = delta_1(coef_m.sigma_deriv, coef_m.sigma, dt, Wm, Wm_next, coef_m.drift);
+                                const dW15 = delta_1(coef_15.sigma_deriv, coef_15.sigma, dt, W15, W15_next, coef_15.drift);
+                                const dXb = delta_1(coef_Xb.sigma_deriv, coef_Xb.sigma, dt, Xb, Xb_next, coef_Xb.drift);
+
+                                sum_W += dW - 0.5 * dW * dW;
+                                sum_Wm += dWm - 0.5 * dWm * dWm;
+                                sum_W15 += dW15 - 0.5 * dW15 * dW15;
+                                sum_Xb += dXb - 0.5 * dXb * dXb;
+
+                                W = W_next; Wm = Wm_next; W15 = W15_next; Xb = Xb_next;
+                            }
+
+                            const dX0 = f(sum_W, 0.0, 100.0);
+                            const dX1 = f(sum_Wm, 0.0, 100.0);
+                            const dX2 = f(sum_W15, 0.0, 100.0);
+                            const dX_b = f(sum_Xb, 0.0, 100.0);
+
+                            S += dX0; Sm += dX1; S_15 += dX2; Sb += dX_b;
+                            B += dX0*dX0; Bm += dX1*dX1; B_15 += dX2*dX2; Bb += dX_b*dX_b;
+                        }
+
+                        const inv_paths = 1.0 / paths;
+                        const A_val = S * inv_paths;
+                        const Am_val = Sm * inv_paths;
+                        const A15_val = S_15 * inv_paths;
+                        const Ab_val = Sb * inv_paths;
+
+                        const E_val = (B * inv_paths) - (A_val * A_val);
+                        const Em_val = (Bm * inv_paths) - (Am_val * Am_val);
+                        const E15_val = (B_15 * inv_paths) - (A15_val * A15_val);
+                        const Eb_val = (Bb * inv_paths) - (Ab_val * Ab_val);
+
+                        const calcMargin = (v) => 1.96 * Math.sqrt(v / paths);
+                        const Margin_E = calcMargin(E_val);
+                        const Margin_M = calcMargin(Em_val);
+                        const Margin_15 = calcMargin(E15_val);
+                        const Margin_B = calcMargin(Eb_val);
+
+                        newResults.push({
+                            n: n, points: points, paths: paths,
+                            
+                            // Means
+                            Euler: A_val, Milstein: Am_val, Order15: A15_val, Benchmark: Ab_val,
+                            
+                            // CI Upper/Lower Bounds
+                            EulerUpper: A_val + Margin_E, EulerLower: A_val - Margin_E,
+                            MilsteinUpper: Am_val + Margin_M, MilsteinLower: Am_val - Margin_M,
+                            Order15Upper: A15_val + Margin_15, Order15Lower: A15_val - Margin_15,
+                            BenchmarkUpper: Ab_val + Margin_B, BenchmarkLower: Ab_val - Margin_B,
+
+                            // Stats & Errors
+                            E: E_val, Em: Em_val, E15: E15_val, Eb: Eb_val,
+                            EulerError: [Margin_E, Margin_E],
+                            MilsteinError: [Margin_M, Margin_M],
+                            Order15Error: [Margin_15, Margin_15],
+                            BenchmarkError: [Margin_B, Margin_B],
+                            EulerCI: Margin_E, MilsteinCI: Margin_M, Order15CI: Margin_15, BenchmarkCI: Margin_B,
+                        });
+                    }
+
+                    setResults(newResults);
+                    setCalculating(false);
+                    setProgress("");
+                }, 100);
+            };
+
+            // Colors
+            const colorEuler = "#3b82f6"; // Blue-500
+            const colorMil = "#10b981";   // Emerald-500
+            const color15 = "#f59e0b";    // Amber-500
+            const colorBench = "#ef4444"; // Red-500
+
+            return (
+                <div className="max-w-7xl mx-auto p-6">
+                    <h1 className="text-3xl font-bold text-gray-800 mb-6">Monte Carlo SDE: Expectation & 95% CI</h1>
+                    
+                    <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+                        {/* Controls */}
+                        <div className="card lg:col-span-1">
+                            <h2 className="text-lg font-semibold mb-4 border-b pb-2">Parameters</h2>
+                            <div className="space-y-3 text-sm">
+                                <div><label className="block text-gray-600">Initial State (x0)</label><input type="number" value={params.x0} onChange={e => setParams({...params, x0: parseFloat(e.target.value)})} className="w-full border rounded p-2"/></div>
+                                <div><label className="block text-gray-600">Time (T)</label><input type="number" value={params.T} onChange={e => setParams({...params, T: parseFloat(e.target.value)})} className="w-full border rounded p-2"/></div>
+                                <div><label className="block text-gray-600">Alpha (a)</label><input type="number" value={params.a} onChange={e => setParams({...params, a: parseFloat(e.target.value)})} className="w-full border rounded p-2"/></div>
+                                <div><label className="block text-gray-600">Beta (b)</label><input type="number" value={params.b} onChange={e => setParams({...params, b: parseFloat(e.target.value)})} className="w-full border rounded p-2"/></div>
+                                
+                                <div className="pt-3 border-t">
+                                    <label className="block text-gray-800 font-bold mb-2">Loop & Points Settings</label>
+                                    <div className="grid grid-cols-2 gap-2">
+                                        <div>
+                                            <label className="block text-gray-500 text-xs">Max n</label>
+                                            <input type="number" value={params.max_n} max="9" onChange={e => setParams({...params, max_n: parseInt(e.target.value)})} className="w-full border rounded p-2"/>
+                                        </div>
+                                        <div>
+                                            <label className="block text-gray-500 text-xs">Points Base</label>
+                                            <input type="number" value={params.points_base} onChange={e => setParams({...params, points_base: parseInt(e.target.value)})} className="w-full border rounded p-2"/>
+                                        </div>
+                                        <div className="col-span-2">
+                                            <label className="block text-gray-500 text-xs">Points Increment</label>
+                                            <input type="number" value={params.points_inc} onChange={e => setParams({...params, points_inc: parseInt(e.target.value)})} className="w-full border rounded p-2"/>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="pt-3 border-t">
+                                    <label className="block text-gray-800 font-bold mb-2">Paths Settings</label>
+                                    <div className="mb-2">
+                                        <label className="block text-gray-500 text-xs">Multiplier (k * points²)</label>
+                                        <input type="number" step="0.1" value={params.paths_mult} onChange={e => setParams({...params, paths_mult: parseFloat(e.target.value)})} className="w-full border rounded p-2"/>
+                                    </div>
+                                    <div>
+                                        <label className="block text-gray-500 text-xs">Max Paths Cap (Safety)</label>
+                                        <input type="number" step="10000" value={params.paths_cap} onChange={e => setParams({...params, paths_cap: parseInt(e.target.value)})} className="w-full border rounded p-2"/>
+                                    </div>
+                                </div>
+
+                                <button onClick={runSimulation} disabled={calculating} className={`w-full py-2 px-4 rounded font-bold text-white transition ${calculating ? 'bg-gray-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'}`}>
+                                    {calculating ? <div className="flex items-center justify-center gap-2"><div className="spinner"></div> Running...</div> : 'Run Simulation'}
+                                </button>
+                                {progress && <div className="text-xs text-blue-600 text-center animate-pulse">{progress}</div>}
+                            </div>
+                        </div>
+
+                        <div className="lg:col-span-3 space-y-6">
+                            
+                            {/* Graph 1: Expectation */}
+                            <div className="card h-[350px]">
+                                <h2 className="text-lg font-semibold mb-2">1. Expectation Convergence</h2>
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <ComposedChart data={results} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
+                                        <CartesianGrid strokeDasharray="3 3" />
+                                        <XAxis dataKey="points" label={{ value: 'Time Steps', position: 'insideBottom', offset: -10 }} />
+                                        <YAxis label={{ value: 'Expectation', angle: -90, position: 'insideLeft' }} domain={['auto', 'auto']} />
+                                        <Tooltip content={<CustomTooltip />} />
+                                        <Legend verticalAlign="top" height={36}/>
+                                        <Line type="monotone" dataKey="Euler" stroke={colorEuler} strokeWidth={2} dot={{r:3}}><ErrorBar dataKey="EulerError" width={4} strokeWidth={1} stroke={colorEuler} /></Line>
+                                        <Line type="monotone" dataKey="Milstein" stroke={colorMil} strokeWidth={2} dot={{r:3}}><ErrorBar dataKey="MilsteinError" width={4} strokeWidth={1} stroke={colorMil} /></Line>
+                                        <Line type="monotone" dataKey="Order15" stroke={color15} strokeWidth={2} dot={{r:3}}><ErrorBar dataKey="Order15Error" width={4} strokeWidth={1} stroke={color15} /></Line>
+                                        <Line type="monotone" dataKey="Benchmark" stroke={colorBench} strokeWidth={2} dot={{r:3}}><ErrorBar dataKey="BenchmarkError" width={4} strokeWidth={1} stroke={colorBench} /></Line>
+                                    </ComposedChart>
+                                </ResponsiveContainer>
+                            </div>
+
+                             {/* Graph 2: 95% CI Envelope (Updated: Only Dashed Lines) */}
+                             <div className="card h-[500px] border-l-4 border-indigo-500">
+                                <div className="flex justify-between items-center mb-4">
+                                    <div>
+                                        <h2 className="text-lg font-semibold text-indigo-900">2. 95% Confidence Interval Bands (Bounds Only)</h2>
+                                        <p className="text-xs text-gray-500">Showing only the upper and lower bounds (dashed lines). Mean is hidden.</p>
+                                    </div>
+                                </div>
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <LineChart data={results} margin={{ top: 10, right: 30, left: 20, bottom: 20 }}>
+                                        <CartesianGrid strokeDasharray="3 3" />
+                                        <XAxis dataKey="points" label={{ value: 'Time Steps', position: 'insideBottom', offset: -10 }} />
+                                        <YAxis label={{ value: '95% CI Range', angle: -90, position: 'insideLeft' }} domain={['auto', 'auto']} />
+                                        <Tooltip content={<ConfidenceIntervalTooltip />} />
+                                        <Legend verticalAlign="top" height={36} />
+
+                                        {/* Euler: Using Upper bound for legend, Lower bound no legend */}
+                                        <Line type="monotone" dataKey="EulerUpper" stroke={colorEuler} strokeWidth={2} strokeDasharray="5 5" dot={false} name="Euler" />
+                                        <Line type="monotone" dataKey="EulerLower" stroke={colorEuler} strokeWidth={2} strokeDasharray="5 5" dot={false} legendType="none" />
+
+                                        {/* Milstein */}
+                                        <Line type="monotone" dataKey="MilsteinUpper" stroke={colorMil} strokeWidth={2} strokeDasharray="5 5" dot={false} name="Milstein" />
+                                        <Line type="monotone" dataKey="MilsteinLower" stroke={colorMil} strokeWidth={2} strokeDasharray="5 5" dot={false} legendType="none" />
+
+                                        {/* Order 1.5 */}
+                                        <Line type="monotone" dataKey="Order15Upper" stroke={color15} strokeWidth={2} strokeDasharray="5 5" dot={false} name="Order 1.5" />
+                                        <Line type="monotone" dataKey="Order15Lower" stroke={color15} strokeWidth={2} strokeDasharray="5 5" dot={false} legendType="none" />
+
+                                        {/* Benchmark */}
+                                        <Line type="monotone" dataKey="BenchmarkUpper" stroke={colorBench} strokeWidth={2} strokeDasharray="2 2" dot={false} name="Benchmark" />
+                                        <Line type="monotone" dataKey="BenchmarkLower" stroke={colorBench} strokeWidth={2} strokeDasharray="2 2" dot={false} legendType="none" />
+                                    </LineChart>
+                                </ResponsiveContainer>
+                            </div>
+
+                            {/* Data Table */}
+                            <div className="card overflow-x-auto">
+                                <h2 className="text-lg font-semibold mb-4">Detailed Statistics</h2>
+                                <table className="w-full text-sm table-dense border-collapse">
+                                    <thead>
+                                        <tr>
+                                            <th rowSpan="2" className="border p-2">n</th>
+                                            <th rowSpan="2" className="border p-2">Points</th>
+                                            <th colSpan="3" className="border p-2" style={{color: colorEuler}}>Euler</th>
+                                            <th colSpan="3" className="border p-2" style={{color: colorMil}}>Milstein</th>
+                                            <th colSpan="3" className="border p-2" style={{color: colorBench}}>Benchmark</th>
+                                        </tr>
+                                        <tr>
+                                            <th className="border font-normal">Mean</th>
+                                            <th className="border font-normal">CI(±)</th>
+                                            <th className="border font-normal bg-blue-50">Range</th>
+                                            
+                                            <th className="border font-normal">Mean</th>
+                                            <th className="border font-normal">CI(±)</th>
+                                            <th className="border font-normal bg-green-50">Range</th>
+
+                                            <th className="border font-normal">Mean</th>
+                                            <th className="border font-normal">CI(±)</th>
+                                            <th className="border font-normal bg-red-50">Range</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {results.length === 0 ? (
+                                            <tr><td colSpan="12" className="text-center p-4 text-gray-500">Run simulation to see data...</td></tr>
+                                        ) : (
+                                            results.map((row, i) => (
+                                                <tr key={i} className="hover:bg-gray-50 border-b">
+                                                    <td>{row.n}</td>
+                                                    <td>{row.points}</td>
+                                                    
+                                                    <td className="font-mono">{row.Euler.toFixed(4)}</td>
+                                                    <td className="font-mono text-gray-500">{row.EulerCI.toFixed(4)}</td>
+                                                    <td className="font-mono text-xs bg-blue-50">[{row.EulerLower.toFixed(3)}, {row.EulerUpper.toFixed(3)}]</td>
+
+                                                    <td className="font-mono">{row.Milstein.toFixed(4)}</td>
+                                                    <td className="font-mono text-gray-500">{row.MilsteinCI.toFixed(4)}</td>
+                                                    <td className="font-mono text-xs bg-green-50">[{row.MilsteinLower.toFixed(3)}, {row.MilsteinUpper.toFixed(3)}]</td>
+
+                                                    <td className="font-mono">{row.Benchmark.toFixed(4)}</td>
+                                                    <td className="font-mono text-gray-500">{row.BenchmarkCI.toFixed(4)}</td>
+                                                    <td className="font-mono text-xs bg-red-50">[{row.BenchmarkLower.toFixed(3)}, {row.BenchmarkUpper.toFixed(3)}]</td>
+                                                </tr>
+                                            ))
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
