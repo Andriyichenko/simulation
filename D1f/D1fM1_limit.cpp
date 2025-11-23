@@ -118,7 +118,7 @@ inline double benchmark(double X_b, double dt, double Z, double b, double a) {
 
 }
 
-inline double f(double x, double min_val = -4.0, double max_val = 0.0) {
+inline double f(double x, double min_val = -1.0, double max_val = 1.0) {
     return max(min_val, min(x, max_val));
 }
 
@@ -229,8 +229,9 @@ int main() {
                 }
 
             // 指数項の計算
-            double inner_b = 1.0 - exp(-I_W_stateb - 0.5 * I_quad_W_stateb);
-            double inner_a = f(I_W_stateb + 0.5 * I_quad_W_stateb );
+            double term = I_W_stateb + 0.5 * I_quad_W_stateb;
+            double inner_b = 1.0 - exp(-term);
+            double inner_a = f(term);
             double limit = inner_a * inner_b;
     
 
@@ -247,7 +248,7 @@ int main() {
     Ab[n] = Sb * inv_paths;
     
     // 分散の計算
-    Eb[n] = Bb * inv_paths - Ab[n] * Ab[n];
+    Eb[n] = Bb * inv_paths - (Ab[n] * Ab[n]);
 
     // 出力用
     cout << "-------------------------------------------------" << n << "\n";      
