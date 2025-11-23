@@ -171,7 +171,7 @@ inline double compute_sum_state(double delta_val) {
     return delta_val - 0.5 * delta_val * delta_val;  
 }
 
-inline double f(double x, double min_val = -1.0, double max_val = 1.0) {
+inline double f(double x, double min_val = -100.0, double max_val = 0.0) {
     return std::max(min_val, std::min(x, max_val));
 }
 
@@ -208,7 +208,7 @@ int main() {
     // CSV ファイル名の設定
     const string dir_path = "../data_source";
     system(("mkdir -p " + dir_path).c_str()); //フォルダーの確認 
-    const string csv_path = dir_path + "/D1fM1_100_1000_data.csv"; //data sourceのファイル名指定
+    const string csv_path = dir_path + "/D1fM1_100_1000_test_data.csv"; //data sourceのファイル名指定
     ofstream ofs(csv_path, ios::out | ios::trunc);
     
     if (!ofs) {

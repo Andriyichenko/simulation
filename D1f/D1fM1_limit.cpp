@@ -48,7 +48,7 @@ inline void compute( double a, double b, double W_state) {
             sigma_inv = 1.0 / sigma;
             sigma_sq = sigma * sigma;
             sigma_deriv = b * b * W_state * sigma_inv;
-            sigma_deriv2 = b * b * b * sigma_inv * sigma_inv * sigma_inv;
+            sigma_deriv2 = b * b * b * b * sigma_inv * sigma_inv * sigma_inv;
         }
 
 
@@ -64,10 +64,10 @@ inline void compute( double a, double b, double W_state) {
 
 // Euler-Maruyama
 inline double A0(double W_state, const StateCoeff& coef,
-                                         double dt, double dW) {
+                                         double dt, double Z) {
     const double sqrt_dt = sqrt(dt);
 
-    return W_state + coef.drift * dt + coef.sigma * dW;
+    return W_state + coef.drift * dt + coef.sigma * sqrt_dt * Z;
 }
 
 // Milstein
@@ -117,8 +117,7 @@ inline double benchmark(double X_b, double dt, double Z, double b, double a) {
     return sinh((asinh_Xb) + 0.5 * a_b * dt + b * sqrt_dt * Z);
 
 }
-
-inline double f(double x, double min_val = -1.0, double max_val = 1.0) {
+inline double f(double x, double min_val = -100.0, double max_val = 0.0) {
     return max(min_val, min(x, max_val));
 }
 
@@ -141,7 +140,7 @@ int main() {
     constexpr double b_quad = b_sq * b_sq;
     constexpr double x_0 = 1.0;
     constexpr int max_n = 9;
-    
+
 
 
     // 配列の初期化
@@ -157,7 +156,7 @@ int main() {
     // CSV ファイル名の設定
     const string dir_path = "../data_source";
     system(("mkdir -p " + dir_path).c_str()); //フォルダーの確認 
-    const string csv_path = dir_path + "/D1fM1_limit_100_1000_data.csv"; //data sourceのファイル名指定
+    const string csv_path = dir_path + "/D1fM1_limit_100_1000_test_data.csv"; //data sourceのファイル名指定
     ofstream ofs(csv_path, ios::out | ios::trunc);
     
     if (!ofs) {
@@ -180,12 +179,6 @@ int main() {
 
         // パラメータ初期化
         double Sb = 0.0, Bb = 0.0;
-
-        // 積分変数の初期化
-        double I_W_stateb = 0.0;
-        double I_quad_W_stateb = 0.0;
-    
-
 
         // OpenMP threadの並列化
         #pragma omp parallel reduction(+:Sb, Bb)
@@ -220,9 +213,11 @@ int main() {
                     X_b_Y = benchmark(X_b, dt, Z, b, a);
                     
                     // 積分項の更新
-                    I_W_stateb += 0.5 * sp_W_stateb * Z1_sqrt_dt;
+                    I_W_stateb += sqrt(3/2) * sp_W_stateb * Z1_sqrt_dt;
                     I_quad_W_stateb += 0.25 * sp_W_stateb * sp_W_stateb * dt;
                     X_b = X_b_Y;
+
+                  
 
 
 
@@ -233,7 +228,7 @@ int main() {
             double inner_b = 1.0 - exp(-term);
             double inner_a = f(term);
             double limit = inner_a * inner_b;
-    
+  
 
             // 誤差の累計
             Sb += limit;
