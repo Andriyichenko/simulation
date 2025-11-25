@@ -213,8 +213,8 @@ int main() {
                     X_b_Y = benchmark(X_b, dt, Z, b, a);
                     
                     // 積分項の更新
-                    I_W_stateb += sqrt(3/2) * sp_W_stateb * Z1_sqrt_dt;
-                    I_quad_W_stateb += 0.25 * sp_W_stateb * sp_W_stateb * dt;
+                    I_W_stateb += sqrt(1.5) * sp_W_stateb * Z1_sqrt_dt;
+                    I_quad_W_stateb += 1.5 * sp_W_stateb * sp_W_stateb * dt;
                     X_b = X_b_Y;
 
                   

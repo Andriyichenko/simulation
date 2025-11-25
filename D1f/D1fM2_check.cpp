@@ -31,8 +31,8 @@ inline double delta_1(double sigma_prime, double sigma, double dt,
     const double diff_sigma_inv = diff * sigma_inv;
     const double diff_sq = diff * diff;
     const double dt_inv = 1.0 / dt;
-
-
+    
+    
     const double A = diff_sq * diff * sigma_inv * sigma_inv * sigma_inv * dt_inv;
     const double B = diff_sigma_inv;
     
@@ -72,34 +72,40 @@ struct StateCoeff {
     double sigma_sq, sigma_cube; 
 
     // 係数の計算
-inline void compute( double a, double b, double W_state) {
-        const double w_sq = W_state * W_state;
-        const double W_sq_plus_1 = w_sq + 1.0;
-        const double b_sq = b * b, b_quad = b * b * b, a_b = a * b;
+inline void compute(double a, double b, double W_state) {
+    const double w_sq = W_state * W_state;
+    const double W_sq_plus_1 = w_sq + 1.0;
+    const double b_sq = b * b;
     
-    
-        sqrt_W_sq_plus_1 = sqrt(W_sq_plus_1);
+    sqrt_W_sq_plus_1 = sqrt(W_sq_plus_1);
 
-        //a(x)の計算部分
-        drift = 0.5 * b_sq * W_state + a * sqrt_W_sq_plus_1 * asinh(W_state); //a_x
-        drift_deriv = 0.5 * b_sq + a + (a * W_state * asinh(W_state) / sqrt_W_sq_plus_1); //a_x'
+    // a(x)
+    drift = 0.5 * b_sq * W_state + a * sqrt_W_sq_plus_1 * asinh(W_state);
+    drift_deriv = 0.5 * b_sq + a + (a * W_state * asinh(W_state) / sqrt_W_sq_plus_1);
+    
+    // sigma(x) = b*sqrt(x^2+1)
+    if (fabs(b) < 1e-12) {
+        sigma = 0.0;
+        sigma_inv = 0.0;
+        sigma_sq = 0.0;
+        sigma_deriv = 0.0;
+        sigma_deriv2 = 0.0;
+    } else {
+        sigma = b * sqrt_W_sq_plus_1;
+        sigma_inv = 1.0 / sigma;
+        sigma_sq = sigma * sigma;
         
-        // sigma(x)
-        if (fabs(b) < 1e-12) {
-            sigma = 0.0;
-            sigma_inv = 0.0;
-            sigma_sq = 0.0;
-            sigma_deriv = 0.0;
-            sigma_deriv2 = 0.0;
-        } else {
-            sigma = b * sqrt_W_sq_plus_1;
-            sigma_inv = 1.0 / sigma;
-            sigma_sq = sigma * sigma;
-            sigma_deriv = b * b * W_state * sigma_inv;
-            sigma_deriv2 = b * b * b * sigma_inv * sigma_inv * sigma_inv;
-        }
+        // sigma'(x) = b*x / sqrt(x^2+1)
+        sigma_deriv = b * W_state / sqrt_W_sq_plus_1;
+        
+        // sigma''(x) = b / (x^2+1)^(3/2)
+        const double W_sq_plus_1_pow_1_5 = W_sq_plus_1 * sqrt_W_sq_plus_1;
+        sigma_deriv2 = b / W_sq_plus_1_pow_1_5;
+    }
+}    
 
-    }       
+
+
 };
 
 
@@ -167,12 +173,8 @@ inline double benchmark(double X_b, double t, double dW, double dW_prime, double
 
 }
 
-inline double compute_sum_state(double delta_val) {
-    return delta_val - 0.5 * delta_val * delta_val;  
-}
-
-inline double f(double x, double min_val = 0.0, double max_val = 4.0) {
-    return std::max(min_val, std::min(x, max_val));
+inline double f(double x, double min_val = 0.0, double max_val = 10.0) {
+    return max(min_val, min(x, max_val));
 }
 
 // ========================================
@@ -300,20 +302,18 @@ int main() {
                     dX2 = f(sum_W2);
                     dX_b = f(sum_Xb);
 
-                    S  += dX0;       // EM 法のパスごとの最大二乗誤差 dX を総和 S に加算
-                    Sm += dX1;      // Milstein 法のパスごとの最大二乗誤差 dXm を総和 Sm に加算
-                    S_1_5 += dX2; // 1.5 次法のパスごとの最大二乗誤差 dX_1_5 を総和 S_1_5 に加算
-                    Sb += dX_b;   // benchmark 法のパスごとの最大二乗誤差 dX_bb を総和 Sb に加算
-                    B += dX0 * dX0;        // EM 法の期待値推定 B[n] = S / paths を計算
-                    Bm += dX1 * dX1;     // Milstein 法の期待値推定 Bm[n] = Sm / paths を計算
-                    B_1_5 += dX2 * dX2;  // 1.5 次法の期待値推定 B_1_5[n] = S_1_5 / paths を計算
-                    Bb += dX_b * dX_b;  // benchmark 法の期待値推定 Bb[n] = Sb / paths を計算
+                    S  += dX0;       
+                    Sm += dX1;      
+                    S_1_5 += dX2; 
+                    Sb += dX_b;   
+                    B += dX0 * dX0; 
+                    Bm += dX1 * dX1;  
+                    B_1_5 += dX2 * dX2; 
+                    Bb += dX_b * dX_b;  
+            
             }
 
-            
-           
-        } // end of parallel region
-    
+        }// #pragma omp parallel end
 
         // 期待値の計算
         const double inv_paths = 1.0 / paths;
@@ -333,14 +333,14 @@ int main() {
         cout << "-------------------------------------------------" << n << "\n";      
         cout << setprecision(10) << "points = " << points << "\n";       
         cout << "-------------------------------------------------" <<  "\n";      
-        cout << setprecision(10) << "E      = " << E[n] << "\n";         
-        cout << setprecision(10) << "E_m    = " << Em[n] << "\n";        
-        cout << setprecision(10) << "E_1.5  = " << E_1_5[n] << "\n";
-        cout << setprecision(10) << "E_b    = " << Eb[n] << "\n";
-        cout << setprecision(10) << "A      = " << A[n] << "\n";         
-        cout << setprecision(10) << "A_m    = " << Am[n] << "\n";        
-        cout << setprecision(10) << "A_1.5  = " << A_1_5[n] << "\n"; 
-        cout << setprecision(10) << "A_b    = " << Ab[n] << "\n";
+        cout << setprecision(10) << "Var E      = " << E[n] << "\n";         
+        cout << setprecision(10) << "Var E_m    = " << Em[n] << "\n";        
+        cout << setprecision(10) << "Var E_1.5  = " << E_1_5[n] << "\n";
+        cout << setprecision(10) << "Var E_b    = " << Eb[n] << "\n";
+        cout << setprecision(10) << "Mean A      = " << A[n] << "\n";         
+        cout << setprecision(10) << "Mean A_m    = " << Am[n] << "\n";        
+        cout << setprecision(10) << "Mean A_1.5  = " << A_1_5[n] << "\n"; 
+        cout << setprecision(10) << "Mean A_b    = " << Ab[n] << "\n";
 
         // CSVファイルに書き込み
         ofs << n << "," << points << ","  

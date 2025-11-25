@@ -303,17 +303,18 @@ int main() {
                     dX2 = f(sum_W2); 
                     dX_b =  f(sum_Xb); 
 
-                    S  += dX_b - dX0;       // EM 法のパスごとの最大二乗誤差 dX を総和 S に加算
-                    Sm += dX_b - dX1;      // Milstein 法のパスごとの最大二乗誤差 dXm を総和 Sm に加算
-                    S_1_5 += dX_b - dX2; // 1.5 次法のパスごとの最大二乗誤差 dX_1_5 を総和 S_1_5 に加算
-                    B += (dX0-dX_b)*(dX0-dX_b);        // EM 法の期待値推定 B[n] = S / paths を計算
-                    Bm += (dX1-dX_b)*(dX1-dX_b);     // Milstein 法の期待値推定 Bm[n] = Sm / paths を計算
-                    B_1_5 += (dX2-dX_b)*(dX2-dX_b);  // 1.5 次法の期待値推定 B_1_5[n] = S_1_5 / paths を計算
+                    S  += dX_b - dX0;       
+                    Sm += dX_b - dX1;      
+                    S_1_5 += dX_b - dX2; 
+                    B += (dX0-dX_b)*(dX0-dX_b);
+                    Bm += (dX1-dX_b)*(dX1-dX_b); 
+                    B_1_5 += (dX2-dX_b)*(dX2-dX_b); 
+            }
 
             
            
         } // end of parallel region
-    }
+    
 
         // 期待値の計算
         const double inv_paths = 1.0 / paths;
