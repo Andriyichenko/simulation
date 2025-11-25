@@ -292,7 +292,7 @@ int main() {
                     sum_W2 += delta_W2 - 0.5 * delta_W2 * delta_W2;
                     sum_Xb += delta_Xb - 0.5 * delta_Xb * delta_Xb;
                     I_W_stateb += sqrt(1.5) * sp_W_stateb * Z1_sqrt_dt;
-                    I_quad_W_stateb += 0.25 * sp_W_stateb * sp_W_stateb * dt;
+                    I_quad_W_stateb += 1.5 * sp_W_stateb * sp_W_stateb * dt;
 
                     W_state = W_state_Y;
                     W_state1 = W_state1_Y;
