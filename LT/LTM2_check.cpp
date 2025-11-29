@@ -38,41 +38,41 @@ struct StateCoeff {
     double drift, drift_deriv, drift_X_b, drift_X_b_deriv;                       // a(W), a'(W), a_m(W), a_m'(W)
     double sigma, sigma_deriv,sigma_deriv2, sigma_inv;                       // sigma(W), sigma'(W), sigma_m(W), sigma_m'(W)
     double sigma_X_b, sigma_X_b_deriv;                                       // sigma(X_b), sigma''(X_b)
-    double sigma_sq, sigma_cube;                                             // sigma(W)^2, sigma(W)^3
-    
-    
+    double sigma_sq, sigma_cube; 
+
     // 係数の計算
-inline void compute( double a, double b, double W_state) {
-        const double w_sq = W_state * W_state;
-        const double W_sq_plus_1 = w_sq + 1.0;
-        const double b_sq = b * b, b_quad = b * b * b, a_b = a * b;
+inline void compute(double a, double b, double W_state) {
+    const double w_sq = W_state * W_state;
+    const double W_sq_plus_1 = w_sq + 1.0;
+    const double b_sq = b * b;
     
-    
-        sqrt_W_sq_plus_1 = sqrt(W_sq_plus_1);
+    sqrt_W_sq_plus_1 = sqrt(W_sq_plus_1);
 
-        //a(x)の計算部分
-        drift = 0.5 * b_sq * W_state + a * sqrt_W_sq_plus_1 * asinh(W_state); //a_x
-        drift_deriv = 0.5 * b_sq + a + (a * W_state * asinh(W_state) / sqrt_W_sq_plus_1); //a_x'
+    // a(x)
+    drift = 0.5 * b_sq * W_state + a * sqrt_W_sq_plus_1 * asinh(W_state);
+    drift_deriv = 0.5 * b_sq + a + (a * W_state * asinh(W_state) / sqrt_W_sq_plus_1);
+    
+    // sigma(x) = b*sqrt(x^2+1)
+    if (fabs(b) < 1e-12) {
+        sigma = 0.0;
+        sigma_inv = 0.0;
+        sigma_sq = 0.0;
+        sigma_deriv = 0.0;
+        sigma_deriv2 = 0.0;
+    } else {
+        sigma = b * sqrt_W_sq_plus_1;
+        sigma_inv = 1.0 / sigma;
+        sigma_sq = sigma * sigma;
         
-
-
-        // sigma(x)
-        if (fabs(b) < 1e-12) {
-            sigma = 0.0;
-            sigma_inv = 0.0;
-            sigma_sq = 0.0;
-            sigma_deriv = 0.0;
-            sigma_deriv2 = 0.0;
-        } else {
-            sigma = b * sqrt_W_sq_plus_1;
-            sigma_inv = 1.0 / sigma;
-            sigma_sq = sigma * sigma;
-            sigma_deriv = b * b * W_state * sigma_inv;
-            sigma_deriv2 = b * b * b * sigma_inv * sigma_inv * sigma_inv;
-        }
-
-       
+        // sigma'(x) = b*x / sqrt(x^2+1)
+        sigma_deriv = b * W_state / sqrt_W_sq_plus_1;
+        
+        // sigma''(x) = b / (x^2+1)^(3/2)
+        const double W_sq_plus_1_pow_1_5 = W_sq_plus_1 * sqrt_W_sq_plus_1;
+        sigma_deriv2 = b / W_sq_plus_1_pow_1_5;
     }
+}   
+
 };
 
 // ========================================
@@ -81,24 +81,29 @@ inline void compute( double a, double b, double W_state) {
 
 // Euler-Maruyama
 inline double A0(double W_state, const StateCoeff& coef,
-                                         double dt, double sqrt_dt, double Z) {
+                                         double dt, double Z) {
+    const double sqrt_dt = sqrt(dt);
+
     return W_state + coef.drift * dt + coef.sigma * sqrt_dt * Z;
 }
 
 // Milstein
 inline double A1(double W_state, const StateCoeff& coef,
-                                   double dt, double Z, double sqrt_dt) {
-
+                                   double dt, double Z) {
+    const double sqrt_dt = sqrt(dt);
+    const double dt_sq = dt * dt;
     const double Z_sq = Z * Z;
     return W_state + coef.drift * dt + coef.sigma * sqrt_dt * Z + 
            0.5 * coef.sigma_deriv * coef.sigma * (Z_sq * dt - dt);
+           
 }
 
 // 1.5 
 inline double A2(double W_state, const StateCoeff& coef,
-                            double dt, double Z, double sqrt_dt) {
+                            double dt, double Z) {
     const double dt_sq = dt * dt;
     const double Z_sq = Z * Z;
+    const double sqrt_dt = sqrt(dt);
     const double dW = Z * sqrt_dt;
     const double dW_cube = dW * dW * dW;
     const double base = W_state + coef.drift * dt + coef.sigma * dW;
@@ -120,16 +125,21 @@ inline double A2(double W_state, const StateCoeff& coef,
 }
 
 // M2のbenchmark関数の定義
-inline double benchmark_opt(double x_0, double dt,double dW, double dW_prime, double b, double a) {
-    const double Y_0 = asinh(x_0);
-    const double a_t = a * dt, t_a_inv = 1.0/a_t,t_2a_inv = 1.0/(2*a_t);
-    const double exp_at = exp(a * dt), exp_2at = exp(2 * a * dt);
+inline double benchmark(double X_b, double t, double dW, double dW1, double b, double a) {
+    const double Y_0 = asinh(X_b);
+    const double a_t = a * t, t_a_inv = 1.0/a_t,t_2a_inv = 1.0/(2*a_t);
+    const double exp_at = exp(a * t), exp_2at = exp(2 * a * t);
     const double alpha_t = (exp_at - 1) * t_a_inv; 
     const double beta_first = (exp_2at - 1) * t_2a_inv;
     const double beta_t = sqrt(beta_first - (alpha_t * alpha_t));
 
-    return sinh(exp_at * Y_0 + b * (alpha_t * dW + beta_t * dW_prime));
+    return sinh(exp_at * Y_0 + b * (alpha_t * dW + beta_t * dW1));
 
+}
+
+// テスト関数 f(L) = arctan(L)
+inline double f(double x) {
+    return atan(x);
 }
 
 
@@ -169,7 +179,7 @@ int main() {
     vector<double> Eb(max_n + 1, 0.0);
 
     // CSV ファイル名の設定
-    const string dir_path = "data_source";
+    const string dir_path = "../data_source";
     system(("mkdir -p " + dir_path).c_str()); //フォルダーの確認 
     const string csv_path = dir_path + "/LTM2_check_100_1000_data.csv"; //data sourceのファイル名指定
     ofstream ofs(csv_path, ios::out | ios::trunc);
@@ -208,7 +218,7 @@ int main() {
                 // 変数の初期化
                 double W_state = x_0, W_state1 = x_0, W_state2 = x_0;
                 double X_b = x_0, X_b_Y=x_0, W_state_Y=x_0, W_state1_Y=x_0, W_state2_Y=x_0;
-                double dX0 = 0.0, dX_b = 0.0, dX1 = 0.0, dX2 = 0.0;
+                double L_x0 = 0.0, L_xb = 0.0, L_x1 = 0.0, L_x2 = 0.0;
 
                 for (int idx = 1; idx < points; ++idx) {
 
@@ -224,18 +234,18 @@ int main() {
                     coef_1_5.compute(a, b, W_state2);
                     
                     // 状態の更新
-                    W_state_Y= A0(W_state, coef_em, dt, sqrt_dt, Z);
-                    W_state1_Y = A1(W_state1, coef_m, dt, Z, sqrt_dt);
-                    W_state2_Y = A2(W_state2, coef_1_5, dt,Z, sqrt_dt);
+                    W_state_Y= A0(W_state, coef_em, dt, Z);
+                    W_state1_Y = A1(W_state1, coef_m, dt, Z);
+                    W_state2_Y = A2(W_state2, coef_1_5, dt,Z);
 
                     //benchmarkの更新
-                    X_b_Y = benchmark_opt(X_b, dt, dW, dWp, b, a);
+                    X_b_Y = benchmark(X_b, dt, dW, dWp, b, a);
 
                     //phiの累計
-                    dX0 += dt * phi_n(z_const, alpha, W_state_Y, dt);
-                    dX1 += dt * phi_n(z_const, alpha, W_state1_Y, dt);
-                    dX2 += dt * phi_n(z_const, alpha, W_state2_Y, dt);
-                    dX_b += dt * phi_n(z_const, alpha, X_b_Y, dt);
+                    L_x0 += dt * phi_n(z_const, alpha, W_state_Y, dt);
+                    L_x1 += dt * phi_n(z_const, alpha, W_state1_Y, dt);
+                    L_x2 += dt * phi_n(z_const, alpha, W_state2_Y, dt);
+                    L_xb += dt * phi_n(z_const, alpha, X_b_Y, dt);
 
                     //wとx_bの更新
                     W_state1 = W_state1_Y;
@@ -247,16 +257,16 @@ int main() {
                 }
 
                 // 期待値の累計
-                S += dX0;
-                Sm += dX1;
-                S_1_5 += dX2;
-                Sb += dX_b;
+                S += L_x0;
+                Sm += L_x1;
+                S_1_5 += L_x2;
+                Sb += L_xb;
 
                 // 分散用の累計
-                B += dX0 * dX0;
-                Bm += dX1 * dX1;
-                B_1_5 += dX2 * dX2;
-                Bb += dX_b * dX_b;
+                B += L_x0 * L_x0;
+                Bm += L_x1 * L_x1;
+                B_1_5 += L_x2 * L_x2;
+                Bb += L_xb * L_xb;
             }
             
            
