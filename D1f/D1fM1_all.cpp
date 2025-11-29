@@ -96,8 +96,7 @@ inline void compute( double a, double b, double W_state) {
             sigma_inv = 1.0 / sigma;
             sigma_sq = sigma * sigma;
             sigma_deriv = b * b * W_state * sigma_inv;
-            sigma_deriv2 = b * b * b * b * 
-            sigma_inv * sigma_inv * sigma_inv;
+            sigma_deriv2 = b * b * b * b * sigma_inv * sigma_inv * sigma_inv;
         }
 
 
@@ -172,7 +171,7 @@ inline double compute_sum_state(double delta_val) {
 }
 
 inline double f(double x, double min_val = -100.0, double max_val = 0.0) {
-    return std::max(min_val, std::min(x, max_val));
+    return max(min_val, min(x, max_val));
 }
 
 // ========================================

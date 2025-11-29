@@ -96,7 +96,7 @@ inline void compute( double a, double b, double W_state) {
             sigma_inv = 1.0 / sigma;
             sigma_sq = sigma * sigma;
             sigma_deriv = b * b * W_state * sigma_inv;
-            sigma_deriv2 = b * b * b * sigma_inv * sigma_inv * sigma_inv;
+            sigma_deriv2 = b * b * b * b * sigma_inv * sigma_inv * sigma_inv;
         }
 
 
