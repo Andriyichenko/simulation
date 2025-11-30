@@ -204,7 +204,7 @@ int main() {
     // CSV ファイル名の設定
     const string dir_path = "../data_source";
     system(("mkdir -p " + dir_path).c_str()); //フォルダーの確認 
-    const string csv_path = dir_path + "/D1SM1_check_100_1000_data.csv"; //data sourceのファイル名指定
+    const string csv_path = dir_path + "/D1SΔM2_check_100_1000_data.csv"; //data sourceのファイル名指定
     ofstream ofs(csv_path, ios::out | ios::trunc);
     
     if (!ofs) {
@@ -218,7 +218,7 @@ int main() {
     // 時間ステップ数のループ
     for (int n = 0; n <= max_n; ++n) {
         const int points = 100 + 100 * n; //(10-50-100-200-400-600-800-1000)
-        const int paths = 8 * points * points;
+        const int paths = 10 * points * points;
         
         const double dt = (t_end - t_start) / (points - 1);
         const double sqrt_dt = sqrt(dt);

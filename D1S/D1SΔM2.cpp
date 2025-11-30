@@ -1,5 +1,5 @@
-// D1SM2_limit with x_0=1, T=1, a=0.5, b=0.5
-//old
+// D1SΔM2 with x_0=1, T=1, a=0.5, b=0.5
+
 #include <algorithm>  
 #include <cmath>       
 #include <fstream>     
@@ -12,6 +12,52 @@
 #include <omp.h>       // 事前にOpenMPをインストールしてください %macOS: brew install libomp
 
 using namespace std;
+
+// ========================================
+// 関数の定義
+// ========================================
+
+// sgn 関数の定義
+constexpr int sgn(double x) {
+    if (isnan(x)) return 0;
+    return (x > 0) - (x < 0);
+}
+
+// delta_1(t,x,y) の定義　順番直し
+inline double delta_1(double sigma_prime, double sigma, double dt, 
+                      double x, double y, double mu) {
+    const double diff = y - x - mu * dt;
+    const double sigma_inv = 1.0 / sigma;
+    const double diff_sigma_inv = diff * sigma_inv;
+    const double diff_sq = diff * diff;
+    
+    
+    const double A = diff_sq * diff * sigma_inv * sigma_inv * sigma_inv * dt;
+    const double B = diff_sigma_inv;
+    
+    return 0.5 * sigma_prime * (A - 3.0 * B);
+}
+
+// delta_2(t,x,y) の定義 
+inline double delta_2(double a_x, double a_x_prime, double sigma_prime, double sigma, 
+                      double sigma_prime_2, double dt, double x, double y) {
+    double diff = y - x - a_x * dt;
+    double diff_sq = diff * diff;
+    double sigma_sq = sigma * sigma;
+    double sigma_inv = 1.0 / sigma;
+    double sigma_inv_sq = sigma_inv * sigma_inv;
+    double sigma_inv_cube = sigma_inv_sq * sigma_inv;
+    
+    double A = 0.5 * a_x_prime * sigma + 0.5 * a_x * sigma_prime + 
+               0.25 * sigma_prime_2 * sigma_sq;
+    double B = diff_sq * sigma_inv_cube;
+    double C = dt * sigma_inv;
+    double D = sigma_prime_2 * sigma + sigma_prime * sigma_prime;
+    double E = diff_sq * diff_sq * sigma_inv_sq * sigma_inv_sq / dt;    
+    double F = diff_sq * sigma_inv_sq;
+    double G = 3.0 * dt;
+    return A * (B - C) + D * (E - 6.0 * F + G) / 6.0;
+}
 
 // ========================================
 // パラメータの設定
@@ -121,7 +167,9 @@ inline double benchmark(double X_b, double t, double dW, double dW1, double b, d
 
 }
 
-
+inline double compute_sum_state(double delta_val) {
+    return delta_val - 0.5 * delta_val * delta_val;  
+}
 
 // ========================================
 // メインプログラム
@@ -156,7 +204,7 @@ int main() {
     // CSV ファイル名の設定
     const string dir_path = "../data_source";
     system(("mkdir -p " + dir_path).c_str()); //フォルダーの確認 
-    const string csv_path = dir_path + "/D1SM2_limit_100_1000_data.csv"; //data sourceのファイル名指定
+    const string csv_path = dir_path + "/D1SΔM2_100_1000_data.csv"; //data sourceのファイル名指定
     ofstream ofs(csv_path, ios::out | ios::trunc);
     
     if (!ofs) {
@@ -165,12 +213,12 @@ int main() {
     }
     
     ofs.imbue(locale::classic());
-    ofs << "n,points,Eb,Ab\n";
+    ofs << "n,points,E,Em,E_1_5,A,Am,A_1_5\n";
 
     // 時間ステップ数のループ
     for (int n = 0; n <= max_n; ++n) {
         const int points = 100 + 100 * n; //(10-50-100-200-400-600-800-1000)
-        const int paths = 8 * points * points;
+        const int paths = 10 * points * points;
         
         const double dt = (t_end - t_start) / (points - 1);
         const double sqrt_dt = sqrt(dt);
@@ -178,90 +226,112 @@ int main() {
 
 
         // パラメータ初期化
-        double Sb = 0.0, Bb = 0.0;
-
-        // 積分変数の初期化
-        double I_W_stateb = 0.0;
-        double I_quad_W_stateb = 0.0;
-    
-
+        double S = 0.0, Sm = 0.0, S_1_5 = 0.0, Sb = 0.0;
+        double B = 0.0, Bm = 0.0, B_1_5 = 0.0, Bb = 0.0;
+       
 
         // OpenMP threadの並列化
-        #pragma omp parallel reduction(+:Sb, Bb)
+        #pragma omp parallel reduction(+:S, Sm, S_1_5, B, Bm, B_1_5)
         {
             // 各threadは独自の乱数生成器を持つ
             mt19937 rng(42);
             mt19937 rng1(30);
-            mt19937 rng2(56);
             normal_distribution<double> dist(mu, sigma);
             
-            #pragma omp for schedule(dynamic, 64) nowait
+            #pragma omp for schedule(static) nowait//threadごとに均等に計算を分配
             for (int p = 0; p < paths; ++p) {
                 // 変数の初期化
-                double X_b = x_0,X_b_Y=x_0;
-                double dX_b = 0.0;
+                double W_state = x_0, W_state1 = x_0, W_state2 = x_0;
+                double X_b = x_0,X_b_Y=x_0,W_state_Y=x_0,W_state1_Y=x_0,W_state2_Y=x_0;
+                    double dX0 = 0.0, dX_b = 0.0, dX1 = 0.0, dX2 = 0.0;
+                    double delta_W = 0.0, delta_W1 = 0.0, delta_W2 = 0.0, delta_Xb = 0.0;
                 
                 for (int idx = 1; idx < points; ++idx) {
                     // ランダム数の生成
                     const double Z = dist(rng);
                     const double Z1 = dist(rng1);
-                    const double Z2 = dist(rng2);
-                    double Z2_sqrt_dt = Z2 * sqrt_dt;
-                    double dW = sqrt_dt * Z;
-                    double dW1 = sqrt_dt * Z1;
-                    double dW2 = sqrt_dt * Z2;
-             
+                    const double dW = sqrt_dt * Z;
+                    const double dW_prime = sqrt_dt * Z1;
+                    const double Z_sq = Z * Z;
+                    const double Z_sq_minus_1 = Z_sq - 1.0;
+                    const double Z_cube_minus_3Z = Z * (Z_sq - 3.0);
                     
                     // 係数の計算
-                    StateCoeff coefb;
-                    coefb.compute(a, b, X_b_Y);
+                    StateCoeff coef_em, coef_m, coef_1_5, coef_X_b;
+                    coef_em.compute(a, b, W_state);
+                    coef_m.compute(a, b, W_state1);
+                    coef_1_5.compute(a, b, W_state2);
+                    coef_X_b.compute(a, b, X_b);    
 
-                    // diffusion係数の導数の絶対値
-                    double sp_W_stateb = fabs(coefb.sigma_deriv);
-
-                    // 状態の更新
-                    X_b_Y = benchmark(X_b, dt, dW, dW1, b, a);
                     
-                    // 積分項の更新
-                    I_W_stateb += sqrt(1.5) * sp_W_stateb * Z2_sqrt_dt;
-                    I_quad_W_stateb += 1.5 * sp_W_stateb * sp_W_stateb * dt;
-                    X_b = X_b_Y;
+                    // 状態の更新
+                    W_state_Y = A0(W_state, coef_em, dt, dW);
+                    W_state1_Y = A1(W_state1, coef_m, dt, Z);
+                    W_state2_Y = A2(W_state2, coef_1_5, dt, Z);
+                    X_b_Y = benchmark(X_b, dt, dW, dW_prime, b, a);
 
+                    delta_W  = delta_1(coef_em.sigma_deriv, coef_em.sigma, 
+                                                   dt, W_state, W_state_Y, coef_em.drift);
+                    delta_W1 = delta_1(coef_m.sigma_deriv, coef_m.sigma, 
+                                                    dt, W_state1, W_state1_Y, coef_m.drift);
+                    delta_W2 = delta_1(coef_1_5.sigma_deriv, coef_1_5.sigma, 
+                                                    dt, W_state2, W_state2_Y, coef_1_5.drift);
+                    delta_Xb = delta_1(coef_X_b.sigma_deriv, coef_X_b.sigma, 
+                                                    dt, X_b, X_b_Y, coef_X_b.drift);
+
+                    
+                    dX0  += compute_sum_state(delta_W);    // EM 法の最大二乗誤差を更新: dX = max(dX, diff^2)
+                    dX1 += compute_sum_state(delta_W1);   // Milstein 法の最大二乗誤差を更新: dXm = max(dXm, diffm^2)
+                    dX2 += compute_sum_state(delta_W2); // 1.5 法の最大二乗誤差を更新: dX_1_5 = max(dX_1_5, diff_1_5^2)
+                    dX_b +=  compute_sum_state(delta_Xb); // benchmark 法の最大二乗誤差を更新: dX_bb = max(dX_bb, diff_bb^2)
+
+                    W_state = W_state_Y;
+                    W_state1 = W_state1_Y;
+                    W_state2 = W_state2_Y;
+                    X_b = X_b_Y;
 
                 }
 
-                // 指数項の計算
-                double inner_b = exp(-I_W_stateb - 0.5 * I_quad_W_stateb) - 1.0;
+                    S  += sgn(dX_b) - sgn(dX0);       
+                    Sm += sgn(dX_b) - sgn(dX1);      
+                    S_1_5 += sgn(dX_b) - sgn(dX2); 
+                    B += (sgn(dX0)-sgn(dX_b))*(sgn(dX0)-sgn(dX_b));        
+                    Bm += (sgn(dX1)-sgn(dX_b))*(sgn(dX1)-sgn(dX_b));     
+                    B_1_5 += (sgn(dX2)-sgn(dX_b))*(sgn(dX2)-sgn(dX_b));  
 
-                // 絶対値の計算
-                const double abs_inner_b = fabs(inner_b);
-
-                // 誤差の累計
-                Sb += abs_inner_b;
-                Bb += abs_inner_b * abs_inner_b;
-
-            }
+            
            
         } // end of parallel region
+    }
 
         // 期待値の計算
         const double inv_paths = 1.0 / paths;
-        Ab[n] = Sb * inv_paths;
+        A[n] = S * inv_paths;
+        Am[n] = Sm * inv_paths;
+        A_1_5[n] = S_1_5 * inv_paths;
         
         // 分散の計算
-        Eb[n] = Bb * inv_paths - Ab[n] * Ab[n];
+        E[n] = B * inv_paths - A[n] * A[n];
+        Em[n] = Bm * inv_paths - Am[n] * Am[n];
+        E_1_5[n] = B_1_5 * inv_paths - A_1_5[n] * A_1_5[n];
+
 
         // 出力用
         cout << "-------------------------------------------------" << n << "\n";      
         cout << setprecision(10) << "points = " << points << "\n";       
         cout << "-------------------------------------------------" <<  "\n";      
-        cout << setprecision(10) << "Eb     = " << Eb[n] << "\n";     
-        cout << setprecision(10) << "Ab     = " << Ab[n] << "\n";    
+        cout << setprecision(10) << "E      = " << E[n] << "\n";         
+        cout << setprecision(10) << "E_m    = " << Em[n] << "\n";        
+        cout << setprecision(10) << "E_1.5  = " << E_1_5[n] << "\n";
+        cout << setprecision(10) << "A      = " << A[n] << "\n";         
+        cout << setprecision(10) << "A_m    = " << Am[n] << "\n";        
+        cout << setprecision(10) << "A_1.5  = " << A_1_5[n] << "\n"; 
 
         // CSVファイルに書き込み
         ofs << n << "," << points << ","  
             << fixed << setprecision(10) 
-            << Eb[n] << "," << Ab[n] << endl;
+            << E[n] << "," << Em[n] << "," << E_1_5[n] << "," 
+            << A[n] << "," << Am[n] << "," << A_1_5[n] << endl;
     }
 
     ofs.close();

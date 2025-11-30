@@ -1,4 +1,4 @@
-// D1SM1_limit with x_0=1, T=1, a=0.5, b=0.5
+// D1SΔlimM2 with x_0=1, T=1, a=0.5, b=0.5
 //old
 #include <algorithm>  
 #include <cmath>       
@@ -22,42 +22,42 @@ struct StateCoeff {
     double drift, drift_deriv, drift_X_b, drift_X_b_deriv;                       // a(W), a'(W), a_m(W), a_m'(W)
     double sigma, sigma_deriv,sigma_deriv2, sigma_inv;                       // sigma(W), sigma'(W), sigma_m(W), sigma_m'(W)
     double sigma_X_b, sigma_X_b_deriv;                                       // sigma(X_b), sigma''(X_b)
-    double sigma_sq, sigma_cube;        // sigma(W)
+    double sigma_sq, sigma_cube; 
 
     // 係数の計算
-inline void compute( double a, double b, double W_state) {
-        const double w_sq = W_state * W_state;
-        const double W_sq_plus_1 = w_sq + 1.0;
-        const double b_sq = b * b, b_quad = b * b * b, a_b = a * b;
+inline void compute(double a, double b, double W_state) {
+    const double w_sq = W_state * W_state;
+    const double W_sq_plus_1 = w_sq + 1.0;
+    const double b_sq = b * b;
     
-    
-        sqrt_W_sq_plus_1 = sqrt(W_sq_plus_1);
+    sqrt_W_sq_plus_1 = sqrt(W_sq_plus_1);
 
-        //a(x)の計算部分
-        drift = 0.5 * b_sq * W_state + 0.5 * a_b * sqrt_W_sq_plus_1; //a_x
-        drift_deriv = 0.5 * b_sq + (0.5 * a_b * W_state / sqrt_W_sq_plus_1); //a_x'
+    // a(x)
+    drift = 0.5 * b_sq * W_state + a * sqrt_W_sq_plus_1 * asinh(W_state);
+    drift_deriv = 0.5 * b_sq + a + (a * W_state * asinh(W_state) / sqrt_W_sq_plus_1);
+    
+    // sigma(x) = b*sqrt(x^2+1)
+    if (fabs(b) < 1e-12) {
+        sigma = 0.0;
+        sigma_inv = 0.0;
+        sigma_sq = 0.0;
+        sigma_deriv = 0.0;
+        sigma_deriv2 = 0.0;
+    } else {
+        sigma = b * sqrt_W_sq_plus_1;
+        sigma_inv = 1.0 / sigma;
+        sigma_sq = sigma * sigma;
         
-        // sigma(x)
-        if (fabs(b) < 1e-12) {
-            sigma = 0.0;
-            sigma_inv = 0.0;
-            sigma_sq = 0.0;
-            sigma_deriv = 0.0;
-            sigma_deriv2 = 0.0;
-        } else {
-            sigma = b * sqrt_W_sq_plus_1;
-            sigma_inv = 1.0 / sigma;
-            sigma_sq = sigma * sigma;
-            sigma_deriv = b * b * W_state * sigma_inv;
-            sigma_deriv2 = b * b * b * sigma_inv * sigma_inv * sigma_inv;
-        }
-
-
+        // sigma'(x) = b*x / sqrt(x^2+1)
+        sigma_deriv = b * W_state / sqrt_W_sq_plus_1;
+        
+        // sigma''(x) = b / (x^2+1)^(3/2)
+        const double W_sq_plus_1_pow_1_5 = W_sq_plus_1 * sqrt_W_sq_plus_1;
+        sigma_deriv2 = b / W_sq_plus_1_pow_1_5;
     }
+}   
+
 };
-
-
-
 
 // ========================================
 // 近似の更新関数の定義
@@ -65,10 +65,10 @@ inline void compute( double a, double b, double W_state) {
 
 // Euler-Maruyama
 inline double A0(double W_state, const StateCoeff& coef,
-                                         double dt, double dW) {
+                                         double dt, double Z) {
     const double sqrt_dt = sqrt(dt);
 
-    return W_state + coef.drift * dt + coef.sigma * dW;
+    return W_state + coef.drift * dt + coef.sigma * sqrt_dt * Z;
 }
 
 // Milstein
@@ -108,14 +108,16 @@ inline double A2(double W_state, const StateCoeff& coef,
     return base + milstein_term + term3 + term4;
 }
 
-// M1のbenchmark関数の定義
-inline double benchmark(double X_b, double dt, double Z, double b, double a) {
-    const double asinh_Xb = asinh(X_b);
-    const double sqrt_dt = sqrt(dt);
-    const double a_b = a * b;
-   
+// M2のbenchmark関数の定義
+inline double benchmark(double X_b, double t, double dW, double dW1, double b, double a) {
+    const double Y_0 = asinh(X_b);
+    const double a_t = a * t, t_a_inv = 1.0/a_t,t_2a_inv = 1.0/(2*a_t);
+    const double exp_at = exp(a * t), exp_2at = exp(2 * a * t);
+    const double alpha_t = (exp_at - 1) * t_a_inv; 
+    const double beta_first = (exp_2at - 1) * t_2a_inv;
+    const double beta_t = sqrt(beta_first - (alpha_t * alpha_t));
 
-    return sinh((asinh_Xb) + 0.5 * a_b * dt + b * sqrt_dt * Z);
+    return sinh(exp_at * Y_0 + b * (alpha_t * dW + beta_t * dW1));
 
 }
 
@@ -154,7 +156,7 @@ int main() {
     // CSV ファイル名の設定
     const string dir_path = "../data_source";
     system(("mkdir -p " + dir_path).c_str()); //フォルダーの確認 
-    const string csv_path = dir_path + "/D1SM1_limit_100_1000_data.csv"; //data sourceのファイル名指定
+    const string csv_path = dir_path + "/D1SΔlimM2_100_1000_data.csv"; //data sourceのファイル名指定
     ofstream ofs(csv_path, ios::out | ios::trunc);
     
     if (!ofs) {
@@ -168,7 +170,7 @@ int main() {
     // 時間ステップ数のループ
     for (int n = 0; n <= max_n; ++n) {
         const int points = 100 + 100 * n; //(10-50-100-200-400-600-800-1000)
-        const int paths = 8 * points * points;
+        const int paths = 10 * points * points;
         
         const double dt = (t_end - t_start) / (points - 1);
         const double sqrt_dt = sqrt(dt);
@@ -190,6 +192,7 @@ int main() {
             // 各threadは独自の乱数生成器を持つ
             mt19937 rng(42);
             mt19937 rng1(30);
+            mt19937 rng2(56);
             normal_distribution<double> dist(mu, sigma);
             
             #pragma omp for schedule(dynamic, 64) nowait
@@ -202,9 +205,11 @@ int main() {
                     // ランダム数の生成
                     const double Z = dist(rng);
                     const double Z1 = dist(rng1);
-                    double Z1_sqrt_dt = Z1 * sqrt_dt;
-                    double Z_sqrt_dt = Z * sqrt_dt;
+                    const double Z2 = dist(rng2);
+                    double Z2_sqrt_dt = Z2 * sqrt_dt;
                     double dW = sqrt_dt * Z;
+                    double dW1 = sqrt_dt * Z1;
+                    double dW2 = sqrt_dt * Z2;
              
                     
                     // 係数の計算
@@ -215,11 +220,11 @@ int main() {
                     double sp_W_stateb = fabs(coefb.sigma_deriv);
 
                     // 状態の更新
-                    X_b_Y = benchmark(X_b, dt, Z, b, a);
+                    X_b_Y = benchmark(X_b, dt, dW, dW1, b, a);
                     
                     // 積分項の更新
-                    I_W_stateb += sqrt(1.5) * sp_W_stateb * Z1_sqrt_dt;
-                    I_quad_W_stateb += 1.5 * sp_W_stateb * sp_W_stateb * dt;    
+                    I_W_stateb += sqrt(1.5) * sp_W_stateb * Z2_sqrt_dt;
+                    I_quad_W_stateb += 1.5 * sp_W_stateb * sp_W_stateb * dt;
                     X_b = X_b_Y;
 
 
