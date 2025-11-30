@@ -1,4 +1,5 @@
-// D1fM1_limit with x_0=1, T=1, a=0.5, b=0.5
+// D1SM1_limit with x_0=1, T=1, a=0.5, b=0.5
+//old
 #include <algorithm>  
 #include <cmath>       
 #include <fstream>     
@@ -48,7 +49,7 @@ inline void compute( double a, double b, double W_state) {
             sigma_inv = 1.0 / sigma;
             sigma_sq = sigma * sigma;
             sigma_deriv = b * b * W_state * sigma_inv;
-            sigma_deriv2 = b * b * b * b * sigma_inv * sigma_inv * sigma_inv;
+            sigma_deriv2 = b * b * b * sigma_inv * sigma_inv * sigma_inv;
         }
 
 
@@ -64,10 +65,10 @@ inline void compute( double a, double b, double W_state) {
 
 // Euler-Maruyama
 inline double A0(double W_state, const StateCoeff& coef,
-                                         double dt, double Z) {
+                                         double dt, double dW) {
     const double sqrt_dt = sqrt(dt);
 
-    return W_state + coef.drift * dt + coef.sigma * sqrt_dt * Z;
+    return W_state + coef.drift * dt + coef.sigma * dW;
 }
 
 // Milstein
@@ -117,9 +118,6 @@ inline double benchmark(double X_b, double dt, double Z, double b, double a) {
     return sinh((asinh_Xb) + 0.5 * a_b * dt + b * sqrt_dt * Z);
 
 }
-inline double f(double x, double min_val = -100.0, double max_val = 0.0) {
-    return max(min_val, min(x, max_val));
-}
 
 
 
@@ -140,7 +138,7 @@ int main() {
     constexpr double b_quad = b_sq * b_sq;
     constexpr double x_0 = 1.0;
     constexpr int max_n = 9;
-
+    
 
 
     // 配列の初期化
@@ -156,7 +154,7 @@ int main() {
     // CSV ファイル名の設定
     const string dir_path = "../data_source";
     system(("mkdir -p " + dir_path).c_str()); //フォルダーの確認 
-    const string csv_path = dir_path + "/D1fM1_limit_100_1000_test_data.csv"; //data sourceのファイル名指定
+    const string csv_path = dir_path + "/D1SM1_limit_100_1000_data.csv"; //data sourceのファイル名指定
     ofstream ofs(csv_path, ios::out | ios::trunc);
     
     if (!ofs) {
@@ -169,7 +167,7 @@ int main() {
 
     // 時間ステップ数のループ
     for (int n = 0; n <= max_n; ++n) {
-        const int points = 100 + (n * 100); //(10-50-100-200-400-600-800-1000)
+        const int points = 100 + 100 * n; //(10-50-100-200-400-600-800-1000)
         const int paths = 8 * points * points;
         
         const double dt = (t_end - t_start) / (points - 1);
@@ -180,6 +178,12 @@ int main() {
         // パラメータ初期化
         double Sb = 0.0, Bb = 0.0;
 
+        // 積分変数の初期化
+        double I_W_stateb = 0.0;
+        double I_quad_W_stateb = 0.0;
+    
+
+
         // OpenMP threadの並列化
         #pragma omp parallel reduction(+:Sb, Bb)
         {
@@ -187,19 +191,20 @@ int main() {
             mt19937 rng(42);
             mt19937 rng1(30);
             normal_distribution<double> dist(mu, sigma);
-
-           #pragma omp for schedule(static) nowait
+            
+            #pragma omp for schedule(dynamic, 64) nowait
             for (int p = 0; p < paths; ++p) {
                 // 変数の初期化
-                    double I_W_stateb = 0.0;
-                    double I_quad_W_stateb = 0.0;
-                    double X_b = x_0, X_b_Y = x_0;
+                double X_b = x_0,X_b_Y=x_0;
+                double dX_b = 0.0;
                 
                 for (int idx = 1; idx < points; ++idx) {
                     // ランダム数の生成
                     const double Z = dist(rng);
                     const double Z1 = dist(rng1);
                     double Z1_sqrt_dt = Z1 * sqrt_dt;
+                    double Z_sqrt_dt = Z * sqrt_dt;
+                    double dW = sqrt_dt * Z;
              
                     
                     // 係数の計算
@@ -213,49 +218,45 @@ int main() {
                     X_b_Y = benchmark(X_b, dt, Z, b, a);
                     
                     // 積分項の更新
-                        I_W_stateb += sqrt(1.5) * sp_W_stateb * Z1_sqrt_dt;
-                        I_quad_W_stateb += 1.5 * sp_W_stateb * sp_W_stateb * dt;
+                    I_W_stateb += sqrt(1.5) * sp_W_stateb * Z1_sqrt_dt;
+                    I_quad_W_stateb += 1.5 * sp_W_stateb * sp_W_stateb * dt;    
                     X_b = X_b_Y;
-
-                  
-
 
 
                 }
 
-            // 指数項の計算
-            double term = I_W_stateb + 0.5 * I_quad_W_stateb;
-            double inner_b = 1.0 - exp(-term);
-            double inner_a = f(term);
-            double limit = inner_a * inner_b;
-  
+                // 指数項の計算
+                double inner_b = exp(-I_W_stateb - 0.5 * I_quad_W_stateb) - 1.0;
 
-            // 誤差の累計
-            Sb += limit;
-            Bb += limit * limit;
+                // 絶対値の計算
+                const double abs_inner_b = fabs(inner_b);
+
+                // 誤差の累計
+                Sb += abs_inner_b;
+                Bb += abs_inner_b * abs_inner_b;
 
             }
            
         } // end of parallel region
 
-    // 期待値の計算
-    const double inv_paths = 1.0 / paths;
-    Ab[n] = Sb * inv_paths;
-    
-    // 分散の計算
-    Eb[n] = Bb * inv_paths - (Ab[n] * Ab[n]);
+        // 期待値の計算
+        const double inv_paths = 1.0 / paths;
+        Ab[n] = Sb * inv_paths;
+        
+        // 分散の計算
+        Eb[n] = Bb * inv_paths - Ab[n] * Ab[n];
 
-    // 出力用
-    cout << "-------------------------------------------------" << n << "\n";      
-    cout << setprecision(10) << "points = " << points << "\n";       
-    cout << "-------------------------------------------------" <<  "\n";      
-    cout << setprecision(10) << "Eb     = " << Eb[n] << "\n";     
-    cout << setprecision(10) << "Ab     = " << Ab[n] << "\n";    
+        // 出力用
+        cout << "-------------------------------------------------" << n << "\n";      
+        cout << setprecision(10) << "points = " << points << "\n";       
+        cout << "-------------------------------------------------" <<  "\n";      
+        cout << setprecision(10) << "Eb     = " << Eb[n] << "\n";     
+        cout << setprecision(10) << "Ab     = " << Ab[n] << "\n";    
 
-    // CSVファイルに書き込み
-    ofs << n << "," << points << ","  
-        << fixed << setprecision(10) 
-        << Eb[n] << "," << Ab[n] << endl;
+        // CSVファイルに書き込み
+        ofs << n << "," << points << ","  
+            << fixed << setprecision(10) 
+            << Eb[n] << "," << Ab[n] << endl;
     }
 
     ofs.close();
