@@ -14,13 +14,13 @@
 using namespace std;
 
 // ========================================
-// 関数の定義
+// 関数の定義 
 // ========================================
 
 // sgn 関数の定義
 constexpr int sgn(double x) {
     if (isnan(x)) return 0;
-    return (x > 0) - (x < 0);
+    return (x > 0.5) - 5 * (x < 0.5);
 }
 
 // delta_1(t,x,y) の定義　順番直し

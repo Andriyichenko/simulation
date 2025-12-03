@@ -180,9 +180,7 @@ int main() {
         // パラメータ初期化
         double Sb = 0.0, Bb = 0.0;
 
-        // 積分変数の初期化
-        double I_W_stateb = 0.0;
-        double I_quad_W_stateb = 0.0;
+
     
 
 
@@ -199,7 +197,9 @@ int main() {
             for (int p = 0; p < paths; ++p) {
                 // 変数の初期化
                 double X_b = x_0,X_b_Y=x_0;
-                double dX_b = 0.0;
+                // 積分変数の初期化
+                double I_W_stateb = 0.0;
+                double I_quad_W_stateb = 0.0;
                 
                 for (int idx = 1; idx < points; ++idx) {
                     // ランダム数の生成

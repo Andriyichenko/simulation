@@ -216,7 +216,7 @@ int main() {
     }
     
     ofs.imbue(locale::classic());
-    ofs << "n,points,E,Em,E_1_5,E_b,A,Am,A_1_5,A_b\n";
+    ofs << "n,points,E,Em,E_1_5,Eb,A,Am,A_1_5,Ab\n";
 
     // 時間ステップ数のループ
     for (int n = 0; n <= max_n; ++n) {
