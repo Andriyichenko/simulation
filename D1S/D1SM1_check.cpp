@@ -20,7 +20,7 @@ using namespace std;
 // sgn 関数の定義
 constexpr int sgn(double x) {
     if (isnan(x)) return 0;
-    return (x > 0) - (x < 0);
+    return (x > 0.0) - (x < 0.0);
 }
 
 // delta_1(t,x,y) の定義　順番直し
@@ -227,18 +227,7 @@ int main() {
         // パラメータ初期化
         double S = 0.0, Sm = 0.0, S_1_5 = 0.0, Sb = 0.0;
         double B = 0.0, Bm = 0.0, B_1_5 = 0.0, Bb = 0.0;
-        // 積分変数の初始化
-        double I_W_state = 0.0;
-        double I_W_state1 = 0.0;
-        double I_W_state2 = 0.0;
-        double I_W_stateb = 0.0;
-        double I_quad_W_state = 0.0;
-        double I_quad_W_state1 = 0.0;
-        double I_quad_W_state2 = 0.0;
-        double I_quad_W_stateb = 0.0;
-        double S_local = 0.0, Sm_local = 0.0, S_1_5_local = 0.0, Sb_local = 0.0;
-        double B_local = 0.0, Bm_local = 0.0, B_1_5_local = 0.0, Bb_local = 0.0;
-
+        
 
         // OpenMP threadの並列化
         #pragma omp parallel reduction(+:S, Sm, S_1_5, B, Bm, B_1_5, Sb, Bb)

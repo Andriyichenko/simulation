@@ -232,7 +232,7 @@ int main() {
 
 
         // OpenMP threadの並列化
-       #pragma omp parallel reduction(+:S, Sm, S_1_5, Sb, B, Bm, B_1_5, Bb)
+       #pragma omp parallel reduction(+:S, Sm, S_1_5, B, Bm, B_1_5)
         {
             // 各threadは独自の乱数生成器を持つ
             mt19937 rng(42);
