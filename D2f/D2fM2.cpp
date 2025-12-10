@@ -288,7 +288,7 @@ int main() {
                     W_state2_Y = A2(W_state2, coef_1_5, dt, Z);
                     double sp_W_stateb = 1.0 / coefb.sigma_sq;
                     X_b_Y = benchmark(X_b, dt, dW, dW_prime, b, a);
-                    
+                
                     delta_W  = delta_2(coef_em.drift, coef_em.drift_deriv, coef_em.sigma_deriv, coef_em.sigma, 
                                                    coef_em.sigma_deriv2, dt, W_state, W_state_Y);
                     delta_W1 = delta_2(coef_m.drift, coef_m.drift_deriv, coef_m.sigma_deriv, coef_m.sigma, 
