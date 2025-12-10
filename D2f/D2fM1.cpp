@@ -183,8 +183,8 @@ inline double c_4_sq(const StateCoeff& coef) {
 }
 
 inline double c_2_sq(const StateCoeff& coef) {
-    return coef.drift_deriv * coef.sigma_sq / 2.0 + coef.sigma_sq_deriv * coef.drift / 4.0 
-           + coef.sigma_sq_deriv2 * coef.sigma_sq / 8.0 - coef.sigma_sq_deriv * coef.sigma_sq_deriv / 16.0;
+    return coef.drift_deriv * coef.sigma_sq * 0.5 + coef.sigma_sq_deriv * coef.drift * 0.25
+           + coef.sigma_sq_deriv2 * coef.sigma_sq * 0.125 - coef.sigma_sq_deriv * coef.sigma_sq_deriv * 0.0625;
 }
 
 // ========================================
@@ -300,8 +300,8 @@ int main() {
                     delta_Xb = delta_2(coef_X_b.drift, coef_X_b.drift_deriv, coef_X_b.sigma_deriv, coef_X_b.sigma, 
                                                    coef_X_b.sigma_deriv2, dt, X_b, X_b_Y);
 
-                    c2_sq = fabs(c_2_sq(coefb) * c_2_sq(coefb));
-                    c4_sq = fabs(c_4_sq(coefb) * c_4_sq(coefb));
+                    c2_sq = fabs(c_2_sq(coefb));
+                    c4_sq = fabs(c_4_sq(coefb));
 
                     sum_W += delta_W ;
                     sum_W1 += delta_W1 ;
