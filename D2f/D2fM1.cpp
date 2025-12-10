@@ -69,7 +69,7 @@ struct StateCoeff {
     double drift, drift_deriv, drift_X_b, drift_X_b_deriv;                       // a(W), a'(W), a_m(W), a_m'(W)
     double sigma, sigma_deriv,sigma_deriv2, sigma_inv;                       // sigma(W), sigma'(W), sigma_m(W), sigma_m'(W)
     double sigma_X_b, sigma_X_b_deriv;                                       // sigma(X_b), sigma''(X_b)
-    double sigma_sq, sigma_cube;        // sigma(W)
+    double sigma_sq, sigma_cube,sigma_sq_deriv, sigma_sq_deriv2;        // sigma(W)
 
     // 係数の計算
 inline void compute( double a, double b, double W_state) {
@@ -91,12 +91,16 @@ inline void compute( double a, double b, double W_state) {
             sigma_sq = 0.0;
             sigma_deriv = 0.0;
             sigma_deriv2 = 0.0;
+            sigma_sq_deriv = 0.0;
+            sigma_sq_deriv2 = 0.0;
         } else {
             sigma = b * sqrt_W_sq_plus_1;
             sigma_inv = 1.0 / sigma;
             sigma_sq = sigma * sigma;
             sigma_deriv = b * b * W_state * sigma_inv;
             sigma_deriv2 = b * b * b * b * sigma_inv * sigma_inv * sigma_inv;
+            sigma_sq_deriv = 2.0 * b * b * W_state;
+            sigma_sq_deriv2 = 2.0 * b * b;
         }
 
 
@@ -174,13 +178,13 @@ inline double f(double x, double min_val = -100.0, double max_val = 0.0) {
     return max(min_val, min(x, max_val));
 }
 
-inline double c_4(const StateCoeff& coef) {
-    return coef.sigma_deriv2 * coef.sigma * coef.sigma / 12.0;
+inline double c_4_sq(const StateCoeff& coef) {
+    return coef.sigma_sq_deriv2 * coef.sigma_sq * coef.sigma_sq / 12.0;
 }
 
-inline double c_2(const StateCoeff& coef) {
-    return coef.drift_deriv * coef.sigma / 2.0 + coef.sigma_deriv * coef.drift / 4.0 
-           + coef.sigma_deriv2 * coef.sigma / 8.0 - coef.sigma_deriv * coef.sigma_deriv / 16.0;
+inline double c_2_sq(const StateCoeff& coef) {
+    return coef.drift_deriv * coef.sigma_sq / 2.0 + coef.sigma_sq_deriv * coef.drift / 4.0 
+           + coef.sigma_sq_deriv2 * coef.sigma_sq / 8.0 - coef.sigma_sq_deriv * coef.sigma_sq_deriv / 16.0;
 }
 
 // ========================================
@@ -257,7 +261,7 @@ int main() {
                 double X_b = x_0,X_b_Y=x_0,W_state_Y=x_0,W_state1_Y=x_0,W_state2_Y=x_0;
                 double sum_W = 0.0, sum_W1 = 0.0, sum_W2 = 0.0, sum_Xb = 0.0;
                 double delta_W = 0.0, delta_W1 = 0.0, delta_W2 = 0.0, delta_Xb = 0.0;
-                double I_W_stateb_1 = 0.0, I_W_stateb_2 = 0.0, c2 = 0.0, c4 = 0.0;
+                double I_W_stateb_1 = 0.0, I_W_stateb_2 = 0.0;
                 
                 for (int idx = 1; idx < points; ++idx) {
                     // ランダム数の生成
@@ -269,6 +273,7 @@ int main() {
                     const double Z_sq = Z * Z;
                     const double Z_sq_minus_1 = Z_sq - 1.0;
                     const double Z_cube_minus_3Z = Z * (Z_sq - 3.0);
+                    double c2_sq = 0.0, c4_sq = 0.0;
                     
                     // 係数の計算
                     StateCoeff coef_em, coef_m, coef_1_5, coef_X_b, coefb;
@@ -283,7 +288,7 @@ int main() {
                     W_state_Y = A0(W_state, coef_em, dt, Z);
                     W_state1_Y = A1(W_state1, coef_m, dt, Z);
                     W_state2_Y = A2(W_state2, coef_1_5, dt, Z);
-                    double sp_W_stateb = 1.0 / coefb.sigma;
+                    double sp_W_stateb = 1.0 / coefb.sigma_sq;
                     X_b_Y = benchmark(X_b, dt, Z, b, a);
                     
                     delta_W  = delta_2(coef_em.drift, coef_em.drift_deriv, coef_em.sigma_deriv, coef_em.sigma, 
@@ -295,16 +300,16 @@ int main() {
                     delta_Xb = delta_2(coef_X_b.drift, coef_X_b.drift_deriv, coef_X_b.sigma_deriv, coef_X_b.sigma, 
                                                    coef_X_b.sigma_deriv2, dt, X_b, X_b_Y);
 
-                    c2 = fabs(c_2(coefb) * c_2(coefb));
-                    c4 = fabs(c_4(coefb) * c_4(coefb));
+                    c2_sq = fabs(c_2_sq(coefb) * c_2_sq(coefb));
+                    c4_sq = fabs(c_4_sq(coefb) * c_4_sq(coefb));
 
                     sum_W += delta_W ;
                     sum_W1 += delta_W1 ;
                     sum_W2 += delta_W2 ;
                     sum_Xb += delta_Xb ;
               
-                    I_W_stateb_1 += c2 * fabs(sp_W_stateb) * Z1_sqrt_dt;
-                    I_W_stateb_2 += c4 * sp_W_stateb * sp_W_stateb * Z2_sqrt_dt;
+                    I_W_stateb_1 += c2_sq * fabs(sp_W_stateb) * Z1_sqrt_dt;
+                    I_W_stateb_2 += c4_sq * sp_W_stateb * sp_W_stateb * Z2_sqrt_dt;
                     
                     //更新過程
                     W_state = W_state_Y;
@@ -317,7 +322,7 @@ int main() {
  
 
                     // 指数項の計算
-                    double I_T = I_W_stateb_1 + I_W_stateb_2;
+                    double I_T = sqrt(2) * I_W_stateb_1 + 2 * sqrt(6) * I_W_stateb_2;
                     double inner = f(I_T);
                     double limit = inner * I_T;
 
