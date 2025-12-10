@@ -68,7 +68,7 @@ struct StateCoeff {
     double drift, drift_deriv, drift_X_b, drift_X_b_deriv;                       // a(W), a'(W), a_m(W), a_m'(W)
     double sigma, sigma_deriv,sigma_deriv2, sigma_inv;                       // sigma(W), sigma'(W), sigma_m(W), sigma_m'(W)
     double sigma_X_b, sigma_X_b_deriv;                                       // sigma(X_b), sigma''(X_b)
-    double sigma_sq, sigma_cube; 
+    double sigma_sq, sigma_cube, sigma_sq_deriv, sigma_sq_deriv2;               // sigma^2(W), sigma^3(W), (sigma^2)'(W), (sigma^2)''(W)
 
     // 係数の計算
 inline void compute(double a, double b, double W_state) {
@@ -89,10 +89,14 @@ inline void compute(double a, double b, double W_state) {
         sigma_sq = 0.0;
         sigma_deriv = 0.0;
         sigma_deriv2 = 0.0;
+        sigma_sq_deriv = 0.0;
+        sigma_sq_deriv2 = 0.0;
     } else {
         sigma = b * sqrt_W_sq_plus_1;
         sigma_inv = 1.0 / sigma;
-        sigma_sq = sigma * sigma;
+        sigma_sq = b * b * W_sq_plus_1;
+        sigma_sq_deriv = 2.0 * b * b * W_state;
+        sigma_sq_deriv2 = 2.0 * b * b;
         
         // sigma'(x) = b*x / sqrt(x^2+1)
         sigma_deriv = b * W_state / sqrt_W_sq_plus_1;

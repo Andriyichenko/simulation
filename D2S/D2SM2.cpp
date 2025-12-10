@@ -69,43 +69,42 @@ struct StateCoeff {
     double drift, drift_deriv, drift_X_b, drift_X_b_deriv;                       // a(W), a'(W), a_m(W), a_m'(W)
     double sigma, sigma_deriv,sigma_deriv2, sigma_inv;                       // sigma(W), sigma'(W), sigma_m(W), sigma_m'(W)
     double sigma_X_b, sigma_X_b_deriv;                                       // sigma(X_b), sigma''(X_b)
-    double sigma_sq, sigma_cube;        // sigma(W)
+    double sigma_sq, sigma_cube,sigma_sq_deriv, sigma_sq_deriv2;        // sigma(W)
 
-// 係数の計算
-inline void compute(double a, double b, double W_state) {
-    const double w_sq = W_state * W_state;
-    const double W_sq_plus_1 = w_sq + 1.0;
-    const double b_sq = b * b;
+    // 係数の計算
+inline void compute( double a, double b, double W_state) {
+        const double w_sq = W_state * W_state;
+        const double W_sq_plus_1 = w_sq + 1.0;
+        const double b_sq = b * b, b_quad = b * b * b, a_b = a * b;
     
-    sqrt_W_sq_plus_1 = sqrt(W_sq_plus_1);
+    
+        sqrt_W_sq_plus_1 = sqrt(W_sq_plus_1);
 
-    // a(x)
-    drift = 0.5 * b_sq * W_state + a * sqrt_W_sq_plus_1 * asinh(W_state);
-    drift_deriv = 0.5 * b_sq + a + (a * W_state * asinh(W_state) / sqrt_W_sq_plus_1);
-    
-    // sigma(x) = b*sqrt(x^2+1)
-    if (fabs(b) < 1e-12) {
-        sigma = 0.0;
-        sigma_inv = 0.0;
-        sigma_sq = 0.0;
-        sigma_deriv = 0.0;
-        sigma_deriv2 = 0.0;
-    } else {
-        sigma = b * sqrt_W_sq_plus_1;
-        sigma_inv = 1.0 / sigma;
-        sigma_sq = sigma * sigma;
+        //a(x)の計算部分
+        drift = 0.5 * b_sq * W_state + 0.5 * a_b * sqrt_W_sq_plus_1; //a_x
+        drift_deriv = 0.5 * b_sq + (0.5 * a_b * W_state / sqrt_W_sq_plus_1); //a_x'
         
-        // sigma'(x) = b*x / sqrt(x^2+1)
-        sigma_deriv = b * W_state / sqrt_W_sq_plus_1;
-        
-        // sigma''(x) = b / (x^2+1)^(3/2)
-        const double W_sq_plus_1_pow_1_5 = W_sq_plus_1 * sqrt_W_sq_plus_1;
-        sigma_deriv2 = b / W_sq_plus_1_pow_1_5;
+        // sigma(x)
+        if (fabs(b) < 1e-12) {
+            sigma = 0.0;
+            sigma_inv = 0.0;
+            sigma_sq = 0.0;
+            sigma_deriv = 0.0;
+            sigma_deriv2 = 0.0;
+            sigma_sq_deriv = 0.0;
+            sigma_sq_deriv2 = 0.0;
+        } else {
+            sigma = b * sqrt_W_sq_plus_1;
+            sigma_inv = 1.0 / sigma;
+            sigma_sq = sigma * sigma;
+            sigma_deriv = b * b * W_state * sigma_inv;
+            sigma_deriv2 = b * b * b * b * sigma_inv * sigma_inv * sigma_inv;
+            sigma_sq_deriv = 2.0 * b * b * W_state;
+            sigma_sq_deriv2 = 2.0 * b * b;
+        }
+
+
     }
-}    
-
-
-
 };
 
 
@@ -177,13 +176,13 @@ inline double compute_sum_state(double delta_val) {
     return delta_val - 0.5 * delta_val * delta_val;  
 }
 
-inline double c_4(const StateCoeff& coef) {
-    return coef.sigma_deriv2 * coef.sigma * coef.sigma / 12.0;
+inline double c_4_sq(const StateCoeff& coef) {
+    return coef.sigma_sq_deriv2 * coef.sigma_sq * coef.sigma_sq / 12.0;
 }
 
-inline double c_2(const StateCoeff& coef) {
-    return coef.drift_deriv * coef.sigma / 2.0 + coef.sigma_deriv * coef.drift / 4.0 
-           + coef.sigma_deriv2 * coef.sigma / 8.0 - coef.sigma_deriv * coef.sigma_deriv / 16.0;
+inline double c_2_sq(const StateCoeff& coef) {
+    return coef.drift_deriv * coef.sigma_sq / 2.0 + coef.sigma_sq_deriv * coef.drift / 4.0 
+           + coef.sigma_sq_deriv2 * coef.sigma_sq / 8.0 - coef.sigma_sq_deriv * coef.sigma_sq_deriv / 16.0;
 }
 
 
@@ -260,7 +259,7 @@ int main() {
                 double X_b = x_0,X_b_Y=x_0,W_state_Y=x_0,W_state1_Y=x_0,W_state2_Y=x_0;
                 double dX0 = 0.0, dX_b = 0.0, dX1 = 0.0, dX2 = 0.0;
                 double delta_W = 0.0, delta_W1 = 0.0, delta_W2 = 0.0, delta_Xb = 0.0;
-                double I_W_stateb_1 = 0.0, I_W_stateb_2 = 0.0 ,c2=0.0,c4=0.0;
+                double I_W_stateb_1 = 0.0, I_W_stateb_2 = 0.0;
                 
                 for (int idx = 1; idx < points; ++idx) {
                     // ランダム数の生成
@@ -270,7 +269,7 @@ int main() {
                     const double Z_sq = Z * Z;
                     const double Z_sq_minus_1 = Z_sq - 1.0;
                     const double Z_cube_minus_3Z = Z * (Z_sq - 3.0);
-                    
+                    double c2_sq=0.0,c4_sq=0.0;
                     // 係数の計算
                     StateCoeff coef_em, coef_m, coef_1_5, coef_X_b,coefb;
                     coef_em.compute(a, b, W_state);
@@ -285,7 +284,7 @@ int main() {
                     W_state1_Y = A1(W_state1, coef_m, dt, Z);
                     W_state2_Y = A2(W_state2, coef_1_5, dt, Z);
                     X_b_Y = benchmark(X_b, dt, dW, dW_prime,b, a);
-                    double sp_W_stateb = 1.0 / coefb.sigma;
+                    double sp_W_stateb = 1.0 / coefb.sigma_sq;
 
                     delta_W  = delta_2(coef_em.drift, coef_em.drift_deriv, coef_em.sigma_deriv, coef_em.sigma, 
                                                    coef_em.sigma_deriv2, dt, W_state, W_state_Y);
@@ -304,10 +303,10 @@ int main() {
 
 
                     //極限の更新
-                    c2 = fabs(c_2(coefb) * c_2(coefb));
-                    c4 = fabs(c_4(coefb) * c_4(coefb));
-                    I_W_stateb_1 += c2 * fabs(sp_W_stateb) * Z1_sqrt_dt;
-                    I_W_stateb_2 += c4 * sp_W_stateb * sp_W_stateb * Z2_sqrt_dt;
+                    c2_sq = fabs(c_2_sq(coefb) * c_2_sq(coefb));
+                    c4_sq = fabs(c_4_sq(coefb) * c_4_sq(coefb));
+                    I_W_stateb_1 += c2_sq * fabs(sp_W_stateb) * Z1_sqrt_dt;
+                    I_W_stateb_2 += c4_sq * sp_W_stateb * sp_W_stateb * Z2_sqrt_dt;
 
                     W_state = W_state_Y;
                     W_state1 = W_state1_Y;
@@ -321,11 +320,11 @@ int main() {
                     S  += (sgn(dX_b) - sgn(dX0)) / sqrt(dt);       
                     Sm += (sgn(dX_b) - sgn(dX1)) / sqrt(dt);      
                     S_1_5 += (sgn(dX_b) - sgn(dX2)) / sqrt(dt); 
-                    Sb += fabs(I_W_stateb_1 + I_W_stateb_2);
+                    Sb += fabs(sqrt(2) * I_W_stateb_1 + 2 * sqrt(6) * I_W_stateb_2);
                     B += (sgn(dX0)-sgn(dX_b))*(sgn(dX0)-sgn(dX_b)) / dt;        
                     Bm += (sgn(dX1)-sgn(dX_b))*(sgn(dX1)-sgn(dX_b)) / dt;     
                     B_1_5 += (sgn(dX2)-sgn(dX_b))*(sgn(dX2)-sgn(dX_b)) / dt;  
-                    Bb += (I_W_stateb_1 + I_W_stateb_2)*(I_W_stateb_1 + I_W_stateb_2);
+                    Bb += (sqrt(2) * I_W_stateb_1 + 2 * sqrt(6) * I_W_stateb_2)*(sqrt(2) * I_W_stateb_1 + 2 * sqrt(6) * I_W_stateb_2);
 
             
            
