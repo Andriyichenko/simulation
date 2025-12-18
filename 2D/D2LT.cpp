@@ -1,8 +1,8 @@
 //D2LT
 // 問題：
-// 1.dtもベクトルですか
-// 2.z_constもベクトルですか
-// 3.L関数もベクトルですか
+// 1.dtは実数ですか
+// 2.z_const実数ですか
+// 3.L関数の出力は実数ですか
 
 #include <Eigen/Dense>
 #include <algorithm>  
@@ -36,17 +36,17 @@ inline double phi_n(double z_const, double alpha, double x, double h){
     return norm * exp(-z_const_sq / (2.0 * t));
 }
 
-inline double phi_n_2d(const Vector2d& z_const_vec, double alpha, const Vector2d& x_vec, double h){
-    if (h <= 0.0) throw invalid_argument("h must be positive!");
-    const double t = pow(h, alpha);
-    const double PI = 3.141592653589793238462643383279502884;
+// inline double phi_n_2d(double z_const, double alpha, const Vector2d& x_vec, double h){
+//     if (h <= 0.0) throw invalid_argument("h must be positive!");
+//     const double t = pow(h, alpha);
+//     const double PI = 3.141592653589793238462643383279502884;
     
-    Vector2d diff = x_vec - z_const_vec;
-    double dist_sq = diff.squaredNorm();  // ||x - z||^2
+//     Vector2d diff = x_vec - Vector2d::Constant(z_const);
+//     double dist_sq = diff.squaredNorm();  // ||x - z||^2
     
-    const double norm = 1.0 / (2.0 * PI * t);
-    return norm * exp(-dist_sq / (2.0 * t));
-}
+//     const double norm = 1.0 / (2.0 * PI * t);
+//     return norm * exp(-dist_sq / (2.0 * t));
+// }
 
 // D.2 Test Functional: f(x) = arctan(x)
 inline double f(double L) {
@@ -188,10 +188,8 @@ inline State A2(const State& curr, double dt, double Z1, double Z2) {
 
 int main() {  
 
-    //constexpr double z_const = 0.5;
-    Vector2d z_2d(0.5, 0.5); 
+    constexpr double z_const = 0.5;
     constexpr double alpha = 1.0;
-    
     constexpr double t_start = 0.0;
     constexpr double t_end = 1.0;
     constexpr double mu = 0.0;
@@ -250,9 +248,9 @@ int main() {
             #pragma omp for schedule(static) nowait
             for (int p = 0; p < paths; ++p) {
                 // Initialize States
-                State st_em = x0_state;
+                State st_em  = x0_state;
                 State st_mil = x0_state;
-                State st_15 = x0_state;
+                State st_15  = x0_state;
                 
                 // Accumulators for Local Time (L) of the *first component* X1
                 double L_em  = 0.0;
@@ -265,19 +263,19 @@ int main() {
                     double Z2 = dist(rng1);
                     
                     // 1. Update States
-                    State next_em = A0(st_em, dt, Z1, Z2);
+                    State next_em  = A0(st_em, dt, Z1, Z2);
                     State next_mil = A1(st_mil, dt, Z1, Z2);
-                    State next_15 = A2(st_15, dt, Z1, Z2);
+                    State next_15  = A2(st_15, dt, Z1, Z2);
 
                     // 2. Accumulate Local Time for X1 component (index 0)
-                    L_em += dt * phi_n_2d(z_2d, alpha, next_em, dt);
-                    L_mil += dt * phi_n_2d(z_2d, alpha, next_mil, dt);
-                    L_15 += dt * phi_n_2d(z_2d, alpha, next_15, dt);
+                    L_em  += dt * phi_n(z_const, alpha, next_em(0), dt);
+                    L_mil += dt * phi_n(z_const, alpha, next_mil(0), dt);
+                    L_15  += dt * phi_n(z_const, alpha, next_15(0), dt);
 
                     // 3. Move forward
-                    st_em = next_em;
+                    st_em  = next_em;
                     st_mil = next_mil;
-                    st_15 = next_15;
+                    st_15  = next_15;
                 }
 
                 // Apply Test Functional f(L) = arctan(L)

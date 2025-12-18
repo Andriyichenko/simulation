@@ -324,15 +324,15 @@ int main() {
                     double limit = inner * I_T;
 
                     //期待値の計算
-                    S  += (f(sum_Xb) - f(sum_W)) / sqrt(dt);       
-                    Sm += (f(sum_Xb) - f(sum_W1)) / sqrt(dt);      
-                    S_1_5 += (f(sum_Xb) - f(sum_W2)) / sqrt(dt);
+                    S  += (f(sum_Xb / sqrt(dt)) - f(sum_W / sqrt(dt))) / sqrt(dt);       
+                    Sm += (f(sum_Xb / sqrt(dt)) - f(sum_W1 / sqrt(dt))) / sqrt(dt);      
+                    S_1_5 += (f(sum_Xb / sqrt(dt)) - f(sum_W2 / sqrt(dt))) / sqrt(dt);
                     Sb += limit; 
 
                     //分散の計算
-                    B += (f(sum_Xb) - f(sum_W)) * (f(sum_Xb) - f(sum_W)) / dt;        
-                    Bm += (f(sum_Xb) - f(sum_W1)) * (f(sum_Xb) - f(sum_W1)) / dt;     
-                    B_1_5 += (f(sum_Xb) - f(sum_W2)) * (f(sum_Xb) - f(sum_W2)) / dt;  
+                    B += (f(sum_Xb / sqrt(dt)) - f(sum_W / sqrt(dt))) * (f(sum_Xb / sqrt(dt)) - f(sum_W / sqrt(dt))) / dt;        
+                    Bm += (f(sum_Xb / sqrt(dt)) - f(sum_W1 / sqrt(dt))) * (f(sum_Xb / sqrt(dt)) - f(sum_W1 / sqrt(dt))) / dt;     
+                    B_1_5 += (f(sum_Xb / sqrt(dt)) - f(sum_W2 / sqrt(dt))) * (f(sum_Xb / sqrt(dt)) - f(sum_W2 / sqrt(dt))) / dt;  
                     Bb += limit * limit;
 
             }

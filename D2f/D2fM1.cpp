@@ -221,7 +221,7 @@ int main() {
     // CSV ファイル名の設定
     const string dir_path = "../data_source";
     system(("mkdir -p " + dir_path).c_str()); //フォルダーの確認 
-    const string csv_path = dir_path + "/D2fM1_100_1000_data_test1.csv"; //data sourceのファイル名指定
+    const string csv_path = dir_path + "/D2fM1_100_1000_data.csv"; //data sourceのファイル名指定
     ofstream ofs(csv_path, ios::out | ios::trunc);
     
     if (!ofs) {
@@ -263,7 +263,7 @@ int main() {
                 double delta_W = 0.0, delta_W1 = 0.0, delta_W2 = 0.0, delta_Xb = 0.0;
                 double X_b_Y,W_state_Y,W_state1_Y,W_state2_Y;
                 double W_state = x_0, W_state1 = x_0, W_state2 = x_0,X_b = x_0;
-                // double c2_sq = 0.0, c4_sq = 0.0;
+                double c2_sq = 0.0, c4_sq = 0.0;
                 
                 for (int idx = 1; idx < points; ++idx) {
                     // ランダム数の生成
@@ -300,8 +300,8 @@ int main() {
                     delta_Xb = delta_2(coef_X_b.drift, coef_X_b.drift_deriv, coef_X_b.sigma_deriv, coef_X_b.sigma, 
                                                    coef_X_b.sigma_deriv2, dt, X_b, X_b_Y);
 
-                    double c2_sq = fabs(c_2_sq(coef_X_b));
-                    double c4_sq = fabs(c_4_sq(coef_X_b));
+                    c2_sq = fabs(c_2_sq(coef_X_b));
+                    c4_sq = fabs(c_4_sq(coef_X_b));
 
                     sum_W += delta_W ;
                     sum_W1 += delta_W1 ;
@@ -327,15 +327,15 @@ int main() {
                     double limit = inner * I_T;
 
                     //期待値の計算
-                    S  += (f(sum_Xb) - f(sum_W)) / dt;       
-                    Sm += (f(sum_Xb) - f(sum_W1)) / dt;      
-                    S_1_5 += (f(sum_Xb) - f(sum_W2)) / dt;
+                    S  += (f(sum_Xb / sqrt(dt)) - f(sum_W / sqrt(dt))) / sqrt(dt);       
+                    Sm += (f(sum_Xb / sqrt(dt)) - f(sum_W1 / sqrt(dt))) / sqrt(dt);      
+                    S_1_5 += (f(sum_Xb / sqrt(dt)) - f(sum_W2 / sqrt(dt))) / sqrt(dt);
                     Sb += limit; 
 
                     //分散の計算
-                    B += (f(sum_Xb) - f(sum_W)) * (f(sum_Xb) - f(sum_W)) / (dt * dt);        
-                    Bm += (f(sum_Xb) - f(sum_W1)) * (f(sum_Xb) - f(sum_W1)) / (dt * dt);     
-                    B_1_5 += (f(sum_Xb) - f(sum_W2)) * (f(sum_Xb) - f(sum_W2)) / (dt * dt);  
+                    B += (f(sum_Xb / sqrt(dt)) - f(sum_W / sqrt(dt))) * (f(sum_Xb / sqrt(dt)) - f(sum_W / sqrt(dt))) / dt;        
+                    Bm += (f(sum_Xb / sqrt(dt)) - f(sum_W1 / sqrt(dt))) * (f(sum_Xb / sqrt(dt)) - f(sum_W1 / sqrt(dt))) / dt;     
+                    B_1_5 += (f(sum_Xb / sqrt(dt)) - f(sum_W2 / sqrt(dt))) * (f(sum_Xb / sqrt(dt)) - f(sum_W2 / sqrt(dt))) / dt;  
                     Bb += limit * limit;
 
             }

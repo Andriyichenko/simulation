@@ -202,7 +202,7 @@ int main() {
     constexpr double x_0 = 1.0;
     constexpr int max_n = 9;
     
-
+    
 
     // 配列の初期化
     vector<double> A(max_n + 1, 0.0);
