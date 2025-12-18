@@ -176,7 +176,7 @@ inline double compute_sum_state(double delta_val) {
     return delta_val - 0.5 * delta_val * delta_val;  
 }
 
-inline double f(double x, double min_val = -100.0, double max_val = 0.0) {
+inline double f(double x, double min_val = -1.0, double max_val = 1.0) {
     return max(min_val, min(x, max_val));
 }
 
@@ -257,10 +257,9 @@ int main() {
             #pragma omp for schedule(static) nowait//threadごとに均等に計算を分配
             for (int p = 0; p < paths; ++p) {
                 // 変数の初期化
-                double W_state = x_0, W_state1 = x_0, W_state2 = x_0;
-                double X_b = x_0,X_b_Y=x_0,W_state_Y=x_0,W_state1_Y=x_0,W_state2_Y=x_0;
+                double W_state = x_0, W_state1 = x_0, W_state2 = x_0,X_b = x_0;
+                double X_b_Y,W_state_Y,W_state1_Y,W_state2_Y;
                 double sum_W = 0.0, sum_W1 = 0.0, sum_W2 = 0.0, sum_Xb = 0.0;
-                double delta_W = 0.0, delta_W1 = 0.0, delta_W2 = 0.0, delta_Xb = 0.0;
                 double I_W_stateb_1 = 0.0, I_W_stateb_2 = 0.0;
                 
                 for (int idx = 1; idx < points; ++idx) {
@@ -272,21 +271,21 @@ int main() {
                     const double Z_sq_minus_1 = Z_sq - 1.0;
                     const double Z_cube_minus_3Z = Z * (Z_sq - 3.0);
                     double c2_sq = 0.0, c4_sq = 0.0;
+                    double delta_W = 0.0, delta_W1 = 0.0, delta_W2 = 0.0, delta_Xb = 0.0;
                     
                     // 係数の計算
-                    StateCoeff coef_em, coef_m, coef_1_5, coef_X_b, coefb;
+                    StateCoeff coef_em, coef_m, coef_1_5, coef_X_b;
                     coef_em.compute(a, b, W_state);
                     coef_m.compute(a, b, W_state1);
                     coef_1_5.compute(a, b, W_state2);
                     coef_X_b.compute(a, b, X_b);
-                    coefb.compute(a, b, X_b_Y);   
 
                     
                     // 状態の更新
                     W_state_Y = A0(W_state, coef_em, dt, Z);
                     W_state1_Y = A1(W_state1, coef_m, dt, Z);
                     W_state2_Y = A2(W_state2, coef_1_5, dt, Z);
-                    double sp_W_stateb = 1.0 / coefb.sigma_sq;
+                    double sp_W_stateb = 1.0 / coef_X_b.sigma_sq;
                     X_b_Y = benchmark(X_b, dt, dW, dW_prime, b, a);
                 
                     delta_W  = delta_2(coef_em.drift, coef_em.drift_deriv, coef_em.sigma_deriv, coef_em.sigma, 
@@ -298,8 +297,8 @@ int main() {
                     delta_Xb = delta_2(coef_X_b.drift, coef_X_b.drift_deriv, coef_X_b.sigma_deriv, coef_X_b.sigma, 
                                                    coef_X_b.sigma_deriv2, dt, X_b, X_b_Y);
 
-                    c2_sq = fabs(c_2_sq(coefb));
-                    c4_sq = fabs(c_4_sq(coefb));
+                    c2_sq = fabs(c_2_sq(coef_X_b));
+                    c4_sq = fabs(c_4_sq(coef_X_b));
 
                     sum_W += delta_W ;
                     sum_W1 += delta_W1 ;

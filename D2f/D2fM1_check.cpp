@@ -180,12 +180,12 @@ int main() {
     constexpr double t_end = 1.0;
     constexpr double mu = 0.0;
     constexpr double sigma = 1.0;
-    constexpr double b = 0.5;
-    constexpr double a = 0.5;
+    constexpr double b = 1.0;
+    constexpr double a = 0.0;
     constexpr double b_sq = b * b;          
     constexpr double b_quad = b_sq * b_sq;
     constexpr double x_0 = 1.0;
-    constexpr int max_n = 9;
+    constexpr int max_n = 2;
     
 
 
@@ -215,8 +215,8 @@ int main() {
 
     // 時間ステップ数のループ
     for (int n = 0; n <= max_n; ++n) {
-        const int points = 100 + 100 * n; //(10-50-100-200-400-600-800-1000)
-        const int paths = 10 * points * points;
+        const int points = 10 + 10 * n; //(10-50-100-200-400-600-800-1000)
+        const int paths = 1 * points * points;
         
         const double dt = (t_end - t_start) / (points - 1);
         const double sqrt_dt = sqrt(dt);
@@ -229,20 +229,20 @@ int main() {
 
 
         // OpenMP threadの並列化
-        #pragma omp parallel reduction(+:S, Sm, S_1_5, B, Bm, B_1_5, Sb, Bb)
-        {
+        // #pragma omp parallel reduction(+:S, Sm, S_1_5, B, Bm, B_1_5, Sb, Bb)
+        // {
             // 各threadは独自の乱数生成器を持つ
             mt19937 rng(42);
             normal_distribution<double> dist(mu, sigma);
             
-            #pragma omp for schedule(static) nowait//threadごとに均等に計算を分配
+            // #pragma omp for schedule(static) nowait//threadごとに均等に計算を分配
             for (int p = 0; p < paths; ++p) {
                 // 変数の初期化
                 double W_state = x_0, W_state1 = x_0, W_state2 = x_0;
                 double X_b = x_0,X_b_Y=x_0,W_state_Y=x_0,W_state1_Y=x_0,W_state2_Y=x_0;
                 double delta_W = 0.0, delta_W1 = 0.0, delta_W2 = 0.0, delta_Xb = 0.0;
                 double dX0 = 0.0, dX_b = 0.0, dX1 = 0.0, dX2 = 0.0;
-                double sum_W = 0.0, sum_W1 = 0.0, sum_W2 = 0.0, sum_Xb = 0.0;
+                double sum_W = 0.0, sum_W1 = 0.0, sum_W2 = 0.0, sum_Xb = 0.0,diff = 0.0;
                 
                 for (int idx = 1; idx < points; ++idx) {
                     // ランダム数の生成
@@ -272,7 +272,10 @@ int main() {
                                                    coef_1_5.sigma_deriv2, dt, W_state2, W_state2_Y);
                     delta_Xb = delta_2(coef_X_b.drift, coef_X_b.drift_deriv, coef_X_b.sigma_deriv, coef_X_b.sigma, 
                                                    coef_X_b.sigma_deriv2, dt, X_b, X_b_Y);
-                    
+                    diff = delta_Xb - delta_W2; 
+                    cout << "diff: " << diff << endl;
+
+                                                
                     sum_W += delta_W ;
                     sum_W1 += delta_W1;
                     sum_W2 += delta_W2;
@@ -303,7 +306,7 @@ int main() {
 
             
            
-        } // end of parallel region
+        // } // end of parallel region
     
 
         // 期待値の計算

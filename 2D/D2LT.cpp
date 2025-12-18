@@ -1,8 +1,8 @@
-// LTM1_check_2D for D.1 & D.2 (Eigen Version)
-// System:
-//   dX1 = x2*dt + (2+sin(x2))*dW1
-//   dX2 = -x1*dt + (2+sin(x1))*dW2
-// Test Functional: f(L(X1)) = atan(L(X1))
+//D2LT
+// 問題：
+// 1.dtもベクトルですか
+// 2.z_constもベクトルですか
+// 3.L関数もベクトルですか
 
 #include <Eigen/Dense>
 #include <algorithm>  
@@ -36,8 +36,20 @@ inline double phi_n(double z_const, double alpha, double x, double h){
     return norm * exp(-z_const_sq / (2.0 * t));
 }
 
+inline double phi_n_2d(const Vector2d& z_const_vec, double alpha, const Vector2d& x_vec, double h){
+    if (h <= 0.0) throw invalid_argument("h must be positive!");
+    const double t = pow(h, alpha);
+    const double PI = 3.141592653589793238462643383279502884;
+    
+    Vector2d diff = x_vec - z_const_vec;
+    double dist_sq = diff.squaredNorm();  // ||x - z||^2
+    
+    const double norm = 1.0 / (2.0 * PI * t);
+    return norm * exp(-dist_sq / (2.0 * t));
+}
+
 // D.2 Test Functional: f(x) = arctan(x)
-inline double test_functional(double L) {
+inline double f(double L) {
     return atan(L);
 }
 
@@ -53,7 +65,8 @@ inline double dds_func(double x) { return -sin(x); }
 // ========================================
 
 // Euler-Maruyama (Order 0.5)
-inline State A0(const State& curr, double dt, double sqrt_dt, double Z1, double Z2) {
+inline State A0(const State& curr, double dt, double Z1, double Z2) {
+    const double sqrt_dt = sqrt(dt);
     // Noise increments
     Vector2d dW(sqrt_dt * Z1, sqrt_dt * Z2);
 
@@ -67,7 +80,8 @@ inline State A0(const State& curr, double dt, double sqrt_dt, double Z1, double 
 }
 
 // Milstein (Order 1.0)
-inline State A1(const State& curr, double dt, double sqrt_dt, double Z1, double Z2) {
+inline State A1(const State& curr, double dt, double Z1, double Z2) {
+    const double sqrt_dt = sqrt(dt);
     // Noise increments
     Vector2d dW(sqrt_dt * Z1, sqrt_dt * Z2);
     
@@ -90,8 +104,9 @@ inline State A1(const State& curr, double dt, double sqrt_dt, double Z1, double 
     return base + milstein_corr;
 }
 
-// Strong Order 1.5 Scheme (from D.1)
-inline State A2(const State& curr, double dt, double sqrt_dt, double Z1, double Z2) {
+// Strong Order 1.5 Scheme
+inline State A2(const State& curr, double dt, double Z1, double Z2) {
+    const double sqrt_dt = sqrt(dt);
     // 1. Basic definitions
     Vector2d dW(sqrt_dt * Z1, sqrt_dt * Z2);
     double w1 = dW(0), w2 = dW(1);
@@ -116,16 +131,16 @@ inline State A2(const State& curr, double dt, double sqrt_dt, double Z1, double 
     // 3. Initialize result
     State next = curr;
 
-    // --- X1 Component (index 0 -> 使用 curr(1) 作为 x2) ---
+    // --- X1 Component  ---
     
     // Base Euler
     next(0) += a(0) * dt + s1 * w1;
     
     // Milstein (Order 1.0)
-    next(0) += 0.5 * ds1 * s0 * w1 * w2;
+    next(0) += 0.5 * ds1 * s0 * w1 * w2; // = Base Euler + 0.5 * ds1 * s0 * w1 * w2
     
     // Order 1.5 Drift Correction
-    next(0) += 0.5 * dt * (s0 * w2 - curr(0) * ds1 * w1);
+    next(0) += 0.5 * dt * (s0 * w2 + ds1 * a(1) * w1);
     
     // Order 1.5 Sigma Correction
     double term_t8_1 = 2.0 * dds1 * s0 * s0 * w1;
@@ -140,7 +155,7 @@ inline State A2(const State& curr, double dt, double sqrt_dt, double Z1, double 
     double term_h4 = (1.0/24.0) * (ds1*ds1 / s1) * s0*s0 * w122;
     next(0) += term_h1 + term_h2 + term_h3 + term_h4;
 
-    // --- X2 Component (index 1 -> 使用 curr(0) 作为 x1) ---
+    // --- X2 Component  ---
     
     // Base Euler
     next(1) += a(1) * dt + s0 * w2;
@@ -149,11 +164,11 @@ inline State A2(const State& curr, double dt, double sqrt_dt, double Z1, double 
     next(1) += 0.5 * ds0 * s1 * w1 * w2;
 
     // Order 1.5 Drift Correction
-    next(1) += 0.5 * dt * (-s1 * w1 + curr(1) * ds0 * w2);
+    next(1) += 0.5 * dt * (-s1 * w1 + ds0 * a(0) * w2);
 
     // Order 1.5 Sigma Correction
-    double term2_t8_1 = 2.0 * dds0 * s1 * s1 * w2;
-    double term2_t8_2 = (ds0 * s1 * ds0 * s1 / s0) * w2;
+    double term2_t8_1 = 2.0 * dds0 * s1 * s1 * w1;
+    double term2_t8_2 = ds0 * s1 * ds0 * s1 * w1/ s0;
     double term2_t8_3 = -ds1 * ds0 * s0 * w1;
     next(1) += 0.125 * dt * (term2_t8_1 + term2_t8_2 + term2_t8_3);
 
@@ -173,7 +188,8 @@ inline State A2(const State& curr, double dt, double sqrt_dt, double Z1, double 
 
 int main() {  
 
-    constexpr double z_const = 0.5;
+    //constexpr double z_const = 0.5;
+    Vector2d z_2d(0.5, 0.5); 
     constexpr double alpha = 1.0;
     
     constexpr double t_start = 0.0;
@@ -195,9 +211,9 @@ int main() {
     vector<double> E_1_5(max_n + 1, 0.0);
 
     // CSV ファイル名の設定
-    const string dir_path = "data_source";
+    const string dir_path = "../data_source";
     system(("mkdir -p " + dir_path).c_str()); 
-    const string csv_path = dir_path + "/LTM_2D_check_data.csv"; 
+    const string csv_path = dir_path + "/D2LT_data.csv"; 
     ofstream ofs(csv_path, ios::out | ios::trunc);
     
     if (!ofs) {
@@ -206,24 +222,29 @@ int main() {
     }
     
     ofs.imbue(locale::classic());
-    ofs << "n,points,Var_EM,Var_Milstein,Var_1.5,E_EM,E_Milstein,E_1.5\n";
+    ofs << "n,points,E,Em,E_1.5,A,Am,A_1.5\n";
 
     // 時間ステップ数のループ
     for (int n = 0; n <= max_n; ++n) {
         const int points = 100 + 100 * n; 
-        const int paths = 8 * points * points;
+        const int paths = 10 * points * points;
         
         const double dt = (t_end - t_start) / (points - 1);
         const double sqrt_dt = sqrt(dt);
 
         // パラメータ初期化
-        double S = 0.0, Sm = 0.0, S_1_5 = 0.0;
-        double B = 0.0, Bm = 0.0, B_1_5 = 0.0;
+        double S     = 0.0;
+        double Sm    = 0.0; 
+        double S_1_5 = 0.0;
+        double B     = 0.0;
+        double Bm    = 0.0;
+        double B_1_5 = 0.0;
 
         // OpenMP threadの並列化
         #pragma omp parallel reduction(+:S,Sm,S_1_5,B,Bm,B_1_5) 
         {
-            mt19937 rng(42 + omp_get_thread_num()); 
+            mt19937 rng(42); 
+            mt19937 rng1(30);
             normal_distribution<double> dist(mu, sigma);
          
             #pragma omp for schedule(static) nowait
@@ -234,24 +255,24 @@ int main() {
                 State st_15 = x0_state;
                 
                 // Accumulators for Local Time (L) of the *first component* X1
-                double L_em = 0.0;
+                double L_em  = 0.0;
                 double L_mil = 0.0;
-                double L_15 = 0.0;
+                double L_15  = 0.0;
                 
                 for (int idx = 1; idx < points; ++idx) {
                     // Random numbers
                     double Z1 = dist(rng);
-                    double Z2 = dist(rng);
+                    double Z2 = dist(rng1);
                     
                     // 1. Update States
-                    State next_em = A0(st_em, dt, sqrt_dt, Z1, Z2);
-                    State next_mil = A1(st_mil, dt, sqrt_dt, Z1, Z2);
-                    State next_15 = A2(st_15, dt, sqrt_dt, Z1, Z2);
+                    State next_em = A0(st_em, dt, Z1, Z2);
+                    State next_mil = A1(st_mil, dt, Z1, Z2);
+                    State next_15 = A2(st_15, dt, Z1, Z2);
 
                     // 2. Accumulate Local Time for X1 component (index 0)
-                    L_em += dt * phi_n(z_const, alpha, next_em(0), dt);
-                    L_mil += dt * phi_n(z_const, alpha, next_mil(0), dt);
-                    L_15 += dt * phi_n(z_const, alpha, next_15(0), dt);
+                    L_em += dt * phi_n_2d(z_2d, alpha, next_em, dt);
+                    L_mil += dt * phi_n_2d(z_2d, alpha, next_mil, dt);
+                    L_15 += dt * phi_n_2d(z_2d, alpha, next_15, dt);
 
                     // 3. Move forward
                     st_em = next_em;
@@ -260,9 +281,9 @@ int main() {
                 }
 
                 // Apply Test Functional f(L) = arctan(L)
-                double val_em = test_functional(L_em);
-                double val_mil = test_functional(L_mil);
-                double val_15 = test_functional(L_15);
+                double val_em  = f(L_em);
+                double val_mil = f(L_mil);
+                double val_15  = f(L_15);
 
                 // Expectation Accumulation
                 S += val_em;
