@@ -1,4 +1,7 @@
 compile_file/
-data_source/
+data_source/D1*
+data_source/D2*
+
+
 .DS_Store
 .tex

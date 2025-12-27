@@ -1,6 +1,8 @@
 // D2fM2 with x_0=1, T=1, a=0.5, b=0.5
 
 #include <algorithm>  
+#include <sstream>
+#include <cstdlib>
 #include <cmath>       
 #include <fstream>     
 #include <iomanip>    
@@ -72,39 +74,42 @@ struct StateCoeff {
     double sigma_sq, sigma_cube,sigma_sq_deriv, sigma_sq_deriv2;        // sigma(W)
 
     // 係数の計算
-inline void compute( double a, double b, double W_state) {
-        const double w_sq = W_state * W_state;
-        const double W_sq_plus_1 = w_sq + 1.0;
-        const double b_sq = b * b, b_quad = b * b * b, a_b = a * b;
+inline void compute(double a, double b, double W_state) {
+    const double w_sq = W_state * W_state;
+    const double W_sq_plus_1 = w_sq + 1.0;
+    const double b_sq = b * b;
     
-    
-        sqrt_W_sq_plus_1 = sqrt(W_sq_plus_1);
+    sqrt_W_sq_plus_1 = sqrt(W_sq_plus_1);
 
-        //a(x)の計算部分
-        drift = 0.5 * b_sq * W_state + 0.5 * a_b * sqrt_W_sq_plus_1; //a_x
-        drift_deriv = 0.5 * b_sq + (0.5 * a_b * W_state / sqrt_W_sq_plus_1); //a_x'
+    // a(x)
+    drift = 0.5 * b_sq * W_state + a * sqrt_W_sq_plus_1 * asinh(W_state);
+    drift_deriv = 0.5 * b_sq + a + (a * W_state * asinh(W_state) / sqrt_W_sq_plus_1);
+    
+    // sigma(x) = b*sqrt(x^2+1)
+    if (fabs(b) < 1e-12) {
+        sigma = 0.0;
+        sigma_inv = 0.0;
+        sigma_sq = 0.0;
+        sigma_deriv = 0.0;
+        sigma_deriv2 = 0.0;
+        sigma_sq_deriv = 0.0;
+        sigma_sq_deriv2 = 0.0;
+    } else {
+        sigma = b * sqrt_W_sq_plus_1;
+        sigma_inv = 1.0 / sigma;
+        sigma_sq = sigma * sigma;
         
-        // sigma(x)
-        if (fabs(b) < 1e-12) {
-            sigma = 0.0;
-            sigma_inv = 0.0;
-            sigma_sq = 0.0;
-            sigma_deriv = 0.0;
-            sigma_deriv2 = 0.0;
-            sigma_sq_deriv = 0.0;
-            sigma_sq_deriv2 = 0.0;
-        } else {
-            sigma = b * sqrt_W_sq_plus_1;
-            sigma_inv = 1.0 / sigma;
-            sigma_sq = sigma * sigma;
-            sigma_deriv = b * b * W_state * sigma_inv;
-            sigma_deriv2 = b * b * b * b * sigma_inv * sigma_inv * sigma_inv;
-            sigma_sq_deriv = 2.0 * b * b * W_state;
-            sigma_sq_deriv2 = 2.0 * b * b;
-        }
-
-
+        // sigma'(x) = b*x / sqrt(x^2+1)
+        sigma_deriv = b * W_state / sqrt_W_sq_plus_1;
+        
+        // sigma''(x) = b / (x^2+1)^(3/2)
+        const double W_sq_plus_1_pow_1_5 = W_sq_plus_1 * sqrt_W_sq_plus_1;
+        sigma_deriv2 = b / W_sq_plus_1_pow_1_5;
+        sigma_sq_deriv = 2.0 * b * b * W_state;
+        sigma_sq_deriv2 = 2.0 * b * b;
     }
+}   
+
 };
 
 
@@ -161,23 +166,43 @@ inline double A2(double W_state, const StateCoeff& coef,
 
 // M2のbenchmark関数の定義
 inline double benchmark(double X_b, double t, double dW, double dW_prime, double b, double a) {
+    const double x = a * t;
     const double Y_0 = asinh(X_b);
-    const double a_t = a * t, t_a_inv = 1.0/a_t,t_2a_inv = 1.0/(2*a_t);
-    const double exp_at = exp(a * t), exp_2at = exp(2 * a * t);
-    const double alpha_t = (exp_at - 1) * t_a_inv; 
-    const double beta_first = (exp_2at - 1) * t_2a_inv;
-    const double beta_t = sqrt(beta_first - (alpha_t * alpha_t));
+    const double exp_at = exp(x); 
+    
+    double alpha_t, beta_t;
+    if (abs(x) < 1.0e-4) {
+        // Alpha_t Taylor: 1 + x/2 + x^2/6
+        alpha_t = 1.0 + 0.5 * x + (x * x) / 6.0;
+
+        // Beta_t Taylor: 
+        const double sqrt_12 = 3.464101615137754587; 
+        beta_t = (abs(x) / sqrt_12) * (1.0 + 0.5 * x);
+    } else {
+        // expm1(x) \equiv exp(x) - 1
+        alpha_t = expm1(x) / x;
+        
+        const double beta_first = expm1(2.0 * x) / (2.0 * x);
+        
+        // max for numerical stability
+        double variance_term = beta_first - (alpha_t * alpha_t);
+        beta_t = sqrt(max(0.0, variance_term));
+    }
 
     return sinh(exp_at * Y_0 + b * (alpha_t * dW + beta_t * dW_prime));
-
 }
 
 inline double compute_sum_state(double delta_val) {
     return delta_val - 0.5 * delta_val * delta_val;  
 }
 
+// inline double f(double x, double min_val = -1.0, double max_val = 1.0) {
+//     return max(min_val, min(x, max_val));
+// }
 inline double f(double x, double min_val = -1.0, double max_val = 1.0) {
-    return max(min_val, min(x, max_val));
+    if (isnan(x)) return 0;
+    return 0*(x > 0) - (x < 0);
+    //return max(min_val, min(x, max_val));
 }
 
 inline double c_4_sq(const StateCoeff& coef) {
@@ -197,11 +222,11 @@ int main() {
 
     // 定数の定義
     constexpr double t_start = 0.0;
-    constexpr double t_end = 1.0;
+    constexpr double t_end = 0.1;
     constexpr double mu = 0.0;
     constexpr double sigma = 1.0;
-    constexpr double b = 0.5;
-    constexpr double a = 0.5;
+    constexpr double b = 1;
+    constexpr double a = 0.1;
     constexpr double b_sq = b * b;          
     constexpr double b_quad = b_sq * b_sq;
     constexpr double x_0 = 1.0;
@@ -287,6 +312,36 @@ int main() {
                     W_state2_Y = A2(W_state2, coef_1_5, dt, Z);
                     double sp_W_stateb = 1.0 / coef_X_b.sigma_sq;
                     X_b_Y = benchmark(X_b, dt, dW, dW_prime, b, a);
+                    // if (std::isnan(X_b_Y)) {
+                    //     std::ostringstream oss;
+                    //     oss << setprecision(10);
+                    //     oss << "Wrong\n"
+                    //         << "c2_sq is NaN at points = " << points << "\n"
+                    //         << "idx = " << idx << "\n"
+                    //         << "X_b = " << X_b << "\n"
+                    //         << "a_t = " << a * dt << "\n"
+                    //         << "t_a_inv = " << 1.0 / (a * dt) << "\n"
+                    //         << "t_2a_inv = " << 1.0 / (2 * a * dt) << "\n"
+                    //         << "exp_at = " << exp(a * dt) << "\n"
+                    //         << "exp_2at = " << exp(2 * a * dt) << "\n"
+                    //         << "alpha_t = " << (exp(a * dt) - 1) * (1.0 / (a * dt)) << "\n"
+                    //         << "beta_first = " << (exp(2 * a * dt) - 1) * (1.0 / (2 * a * dt)) << "\n"
+                    //         << "beta_t = " << sqrt((exp(2 * a * dt) - 1) * (1.0 / (2 * a * dt)) - ((exp(a * dt) - 1) * (1.0 / (a * dt)) * ((exp(a * dt) - 1) * (1.0 / (a * dt))))) << "\n";
+
+
+                    //     #pragma omp critical
+                    //     {
+                    //         std::cerr << oss.str() << std::flush;
+                    //     }
+                    //     std::abort(); // 或 std::exit(EXIT_FAILURE)
+                    // }
+                    /*    const double Y_0 = asinh(X_b);
+    const double a_t = a * t, t_a_inv = 1.0/a_t,t_2a_inv = 1.0/(2*a_t);
+    const double exp_at = exp(a * t), exp_2at = exp(2 * a * t);
+    const double alpha_t = (exp_at - 1) * t_a_inv; 
+    const double beta_first = (exp_2at - 1) * t_2a_inv;
+    const double beta_t = sqrt(beta_first - (alpha_t * alpha_t));*/
+
                 
                     delta_W  = delta_2(coef_em.drift, coef_em.drift_deriv, coef_em.sigma_deriv, coef_em.sigma, 
                                                    coef_em.sigma_deriv2, dt, W_state, W_state_Y);
@@ -298,7 +353,10 @@ int main() {
                                                    coef_X_b.sigma_deriv2, dt, X_b, X_b_Y);
 
                     c2_sq = fabs(c_2_sq(coef_X_b));
-                    c4_sq = fabs(c_4_sq(coef_X_b));
+                    c4_sq = fabs(c_4_sq(coef_X_b));//points = 1000のとき、再確認
+
+
+    
 
                     sum_W += delta_W ;
                     sum_W1 += delta_W1 ;
@@ -321,7 +379,14 @@ int main() {
                     // 指数項の計算
                     double I_T = sqrt(2) * I_W_stateb_1 + 2 * sqrt(6) * I_W_stateb_2;
                     double inner = f(I_T);
-                    double limit = inner * I_T;
+                    double limit = 0.0;
+                    if (std::isfinite(I_T)) {
+                        limit = inner * I_T;
+                        if (!std::isfinite(limit)) limit = 0.0;
+                    }
+
+
+
 
                     //期待値の計算
                     S  += (f(sum_Xb / sqrt(dt)) - f(sum_W / sqrt(dt))) / sqrt(dt);       

@@ -72,39 +72,42 @@ struct StateCoeff {
     double sigma_sq, sigma_cube,sigma_sq_deriv, sigma_sq_deriv2;        // sigma(W)
 
     // 係数の計算
-inline void compute( double a, double b, double W_state) {
-        const double w_sq = W_state * W_state;
-        const double W_sq_plus_1 = w_sq + 1.0;
-        const double b_sq = b * b, b_quad = b * b * b, a_b = a * b;
+inline void compute(double a, double b, double W_state) {
+    const double w_sq = W_state * W_state;
+    const double W_sq_plus_1 = w_sq + 1.0;
+    const double b_sq = b * b;
     
-    
-        sqrt_W_sq_plus_1 = sqrt(W_sq_plus_1);
+    sqrt_W_sq_plus_1 = sqrt(W_sq_plus_1);
 
-        //a(x)の計算部分
-        drift = 0.5 * b_sq * W_state + 0.5 * a_b * sqrt_W_sq_plus_1; //a_x
-        drift_deriv = 0.5 * b_sq + (0.5 * a_b * W_state / sqrt_W_sq_plus_1); //a_x'
+    // a(x)
+    drift = 0.5 * b_sq * W_state + a * sqrt_W_sq_plus_1 * asinh(W_state);
+    drift_deriv = 0.5 * b_sq + a + (a * W_state * asinh(W_state) / sqrt_W_sq_plus_1);
+    
+    // sigma(x) = b*sqrt(x^2+1)
+    if (fabs(b) < 1e-12) {
+        sigma = 0.0;
+        sigma_inv = 0.0;
+        sigma_sq = 0.0;
+        sigma_deriv = 0.0;
+        sigma_deriv2 = 0.0;
+        sigma_sq_deriv = 0.0;
+        sigma_sq_deriv2 = 0.0;
+    } else {
+        sigma = b * sqrt_W_sq_plus_1;
+        sigma_inv = 1.0 / sigma;
+        sigma_sq = sigma * sigma;
         
-        // sigma(x)
-        if (fabs(b) < 1e-12) {
-            sigma = 0.0;
-            sigma_inv = 0.0;
-            sigma_sq = 0.0;
-            sigma_deriv = 0.0;
-            sigma_deriv2 = 0.0;
-            sigma_sq_deriv = 0.0;
-            sigma_sq_deriv2 = 0.0;
-        } else {
-            sigma = b * sqrt_W_sq_plus_1;
-            sigma_inv = 1.0 / sigma;
-            sigma_sq = sigma * sigma;
-            sigma_deriv = b * b * W_state * sigma_inv;
-            sigma_deriv2 = b * b * b * b * sigma_inv * sigma_inv * sigma_inv;
-            sigma_sq_deriv = 2.0 * b * b * W_state;
-            sigma_sq_deriv2 = 2.0 * b * b;
-        }
-
-
+        // sigma'(x) = b*x / sqrt(x^2+1)
+        sigma_deriv = b * W_state / sqrt_W_sq_plus_1;
+        
+        // sigma''(x) = b / (x^2+1)^(3/2)
+        const double W_sq_plus_1_pow_1_5 = W_sq_plus_1 * sqrt_W_sq_plus_1;
+        sigma_deriv2 = b / W_sq_plus_1_pow_1_5;
+        sigma_sq_deriv = 2.0 * b * b * W_state;
+        sigma_sq_deriv2 = 2.0 * b * b;
     }
+}   
+
 };
 
 

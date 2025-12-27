@@ -76,7 +76,7 @@ inline State A0(const State& curr, double dt, double Z1, double Z2) {
     // Diffusion term: σ(X) * dW = [s(x2)*dW1, s(x1)*dW2]^T
     Vector2d diffusion(s_func(curr(1)) * dW(0), s_func(curr(0)) * dW(1));
 
-    return curr + drift * dt + diffusion;
+    return curr + drift * dt + diffusion; 
 }
 
 // Milstein (Order 1.0)
@@ -188,7 +188,7 @@ inline State A2(const State& curr, double dt, double Z1, double Z2) {
 
 int main() {  
 
-    constexpr double z_const = 0.5;
+    double z_const = 2.0 - exp(-1.0);//z_const = 2-exp(-1)
     constexpr double alpha = 1.0;
     constexpr double t_start = 0.0;
     constexpr double t_end = 1.0;
