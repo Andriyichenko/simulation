@@ -2,7 +2,7 @@
 
 ![C++](https://img.shields.io/badge/c++-%2300599C.svg?style=for-the-badge&logo=c%2B%2B&logoColor=white) ![Python](https://img.shields.io/badge/python-3670A0?style=for-the-badge&logo=python&logoColor=ffdd54) ![Jupyter Notebook](https://img.shields.io/badge/jupyter-%23FA0F00.svg?style=for-the-badge&logo=jupyter&logoColor=white) ![GitHub](https://img.shields.io/badge/github-%23121011.svg?style=for-the-badge&logo=github&logoColor=white)
 
-This project contains various simulation schemes for stochastic processes, focusing on different `Test Functionals` and `Approximation Methods`.
+This project contains various simulation schemes for stochastic processes, focusing on different **Test Functionals** and **Approximation Methods**.
 
 Please refer to the page 58 ~66 of the paper [*High order polynomial regression approximation schemes in total variation for multidimensional diffusions*](https://www.overleaf.com/project/6801f9a43ca0501e11926ee2)
 
