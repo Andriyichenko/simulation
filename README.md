@@ -175,7 +175,7 @@ There is no theoretic prediction for the behavior of $\mathbb{E} \left[F_n^M(X^{
 In this set-up one may also consider
 
 $$
-\mathbb{E} \left[\bar{F}_n^M(X^{[n]}) - \bar{F}_n^M(X^{1,[n]})\right] \tag{D2f}
+\textrm{E} \left[\bar{F}_n^M(X^{[n]}) - \bar{F}_n^M(X^{1,[n]})\right]
 $$
 
 Where
