@@ -175,7 +175,7 @@ There is no theoretic prediction for the behavior of $\mathbb{E} \left[F_n^M(X^{
 In this set-up one may also consider
 
 $$
-\textrm{E} \left[\bar{F}_n^M(X^{[n]}) - \bar{F}_n^M(X^{1,[n]})\right]
+\textrm{E} \left[\bar{F}_n^M(X^{[n]}) - \bar{F}_n^M(X^{1,[n]})\right] \quad \text{D2f}
 $$
 
 Where
@@ -187,7 +187,7 @@ $$
 The limit is as before
 
 $$
-\mathbb{E} \left[ f \left(I_T^1\right) I_T^1 \right].  \tag{D2f-limit}
+\mathbb{E} \left[ f \left(I_T^1\right) I_T^1 \right]. \quad \text{D2f-limit}
 $$
 
 In the case of the sign function this becomes $\mathbb{E}[|I_T^1|]$. 
