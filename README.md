@@ -4,10 +4,9 @@
 
 This project contains various simulation schemes for stochastic processes, focusing on different `Test Functionals` and `Approximation Methods`.
 
-Please refer to the page 58 ~66 of the paper *High order polynomial regression approximation schemes in total variation for multidimensional diffusions*
+Please refer to the page 58 ~66 of the paper [*High order polynomial regression approximation schemes in total variation for multidimensional diffusions*](https://www.overleaf.com/project/6801f9a43ca0501e11926ee2)
 
 ## Naming Convention
-
 The file naming convention used throughout this project is as follows:
 
 *   **`_check` suffix** (e.g., `LTM1_check`):
