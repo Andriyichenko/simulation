@@ -7,6 +7,8 @@ This project contains various simulation schemes for stochastic processes, focus
 Please refer to the page 58 ~66 of the paper [*High order polynomial regression approximation schemes in total variation for multidimensional diffusions*](https://www.overleaf.com/project/6801f9a43ca0501e11926ee2)
 
 ## Naming Convention
+
+### C++ File Naming Convention
 The file naming convention used throughout this project is as follows:
 
 *   **`_check` suffix** (e.g., `LTM1_check`):
@@ -18,15 +20,25 @@ The file naming convention used throughout this project is as follows:
     *   These files typically calculate the difference between two methods using a specific formula to analyze **Convergence** or **Error Rates**.
 
 *   **`_limit` suffix** (e.g., `D1fM1_limit`):
-    *   Represents the **direct calculation of the limitation**. 
+    *   Represents the **direct calculation of the limit**. 
     *   These files focus solely on computing the limiting value.  
 
 *   **`_all` suffix** (e.g., `D1fM1_all`):
     *   Represents a **combined analysis**. 
-    *   These files integrate both the error analysis (difference) and limitation calculations into a single executable.
+    *   These files integrate both the error analysis (difference) and limit calculations into a single executable.
 
 *  **`_var` suffix** (e.g., `LTM1_check_var`):
-   *  It indicates files simulated using specific values. For instance, `LTM1_check_var` corresponds to `LTM1_check ` with $x_0=1, T=1, z=0.5, a=-1, b=1,\alpha=1.5$. There are mainly used to generate Varience plots
+   *  It indicates files simulated using specific values. For instance, `LTM1_check_var` corresponds to `LTM1_check ` with $x_0=1, T=1, z=0.5, a=-1, b=1,\alpha=1.5$. They are mainly used to generate Variance plots
+
+### Data Source Naming Convention
+The files in the `data_source/` directory follow a naming convention that links them to their generating C++ files and simulation parameters:
+
+*   **`_100_1000_data` suffix**:
+    *   Indicates that the dataset contains simulation results for a range of discretization points, specifically from $n=100$ to $n=1000$.
+
+*   **File Prefix** (e.g., `D1fM1_check` in `D1fM1_check_100_1000_data.csv`):
+    *   Corresponds directly to the name of the C++ executable or source file that generated the data (e.g., `D1fM1_check.cpp`).
+    *   This convention applies to all variations including `_limit`, `_all`, and `_var`, ensuring a clear mapping between the data and the code used to produce it.
 
 ---
 
@@ -132,7 +144,7 @@ $$
 
 This is used to show numerically that approximation rates for Euler schemes are not better than $h_n^0$. 
 
-And the limitation can be also computed explicitly
+The limit can also be computed explicitly
 
 $$
 \mathbf{E} \left| \exp \left( -I_T^0 - \frac{1}{2}\langle I^0 \rangle_T \right) - 1 \right| 
@@ -169,7 +181,7 @@ $$
 \end{aligned}
 $$
 
-There is no theoretic prediction for the behavior of $\mathbb{E} \left[F_n^M(X^{[n]}) - F_n^M(X^{0,[n]})\right]$, the theoretical bound here $O(n^{1/2})$, but what we have observed in the earlier simulations is that the rate is very close to $O(n^{-1})$. 
+There is no theoretical prediction for the behavior of $\mathbb{E} \left[F_n^M(X^{[n]}) - F_n^M(X^{0,[n]})\right]$, the theoretical bound here $O(n^{1/2})$, but what we have observed in the earlier simulations is that the rate is very close to $O(n^{-1})$. 
 
 In this set-up one may also consider
 
@@ -262,7 +274,7 @@ $$
 
 The test functional used is $F_n(\overline{X}^\theta) = \arctan(L_n^z(\overline{X}^\theta))$.
 
-Particular choice:  $f(x) = \text{arctg}(x)$. We will compare
+Particular choice:  $f(x) = \arctan(x)$. We will compare
 
 $$
 \mathbb{E}[F_n(\overline{X})] - \mathbb{E}[F_n(\overline{X}^\alpha)]
@@ -274,12 +286,12 @@ $$
 ### 7. Max Measure (MM)
 **Directory:** `Max/`
 
-This module measures errors using the **maximum Measure** (strong convergence).
-It compares different schemes (Euler, Milstein, 1. 5) using:  
+This module measures errors using the **maximum measure** (strong convergence).
+It compares different schemes (Euler, Milstein, 1.5) using:  
 
 $$
 \mathbb{E} \left[ \max_{i=1,\ldots,n} \|X_{t_{i,n}} - \bar{X}^\theta_{t_{i,n}}\|^2 \right]
 $$
 
 *   **Simulation Plot:** [MM_plot](./Max/MM_plot.ipynb)
-*   **Simulation Code:** [MaX](./Max/)
+*   **Simulation Code:** [Max](./Max/)
