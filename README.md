@@ -36,11 +36,12 @@ The file naming convention used throughout this project is as follows:
 This module implements a test functional based on the **2D-Local Time** at a point $z$. It considers specific examples where:  
 
 $$
-\sigma(x) = \begin{pmatrix} s(x_2) & 0 \\ 0 & s(x_1) \end{pmatrix}, \quad b(x) = \begin{pmatrix} s^2(x_2) & 0 \\ 0 & s^2(x_1) \end{pmatrix}
+\sigma(x) = \left( {s(x_2) \atop 0} \ \  {0 \atop s(x_1)} \right),\quad b(x) = \left( {s^{2}(x_2) \atop 0} \ \  {0 \atop s^{2}(x_1)} \right)
 $$
+Where,
 
 $$
-s(x) = 2 + \sin x, \quad a(x) = \begin{pmatrix} a_1(x) \\ a_2(x) \end{pmatrix} = \begin{pmatrix} x_2 \\ -x_1 \end{pmatrix}, \quad x_{\text{start}} = \begin{pmatrix} 1 \\ 1 \end{pmatrix}, \quad T = 1
+s(x) = 2 + \sin x, \quad a(x) = \left( {a_1(x) \atop a_2(x)}\right) = \left( {x_2 \atop -x_1}\right), \quad x_{\text{start}} = \left( {1 \atop 1}\right), \quad T = 1
 $$
 
 It implements various simulation schemes (Euler, Milstein, 1.5 order) for multidimensional processes.
@@ -73,7 +74,7 @@ $$
 D_1(n, X)=\sum_{k=1}^n \Delta^1(h_n, X_{t_{k-1}}, X_{t_k}) - \frac{1}{2} \sum_{k=1}^n \left[ \Delta^1(h_n, X_{t_{k-1}}, X_{t_k}) \right]^2
 $$
 
-where,
+Where,
 
 $$
 \begin{aligned}
@@ -116,7 +117,7 @@ $$
 F_n^E(X) = \text{sgn}(D_1(n, X))
 $$
 
-where,
+Where,
 
 $$
 \begin{aligned}
