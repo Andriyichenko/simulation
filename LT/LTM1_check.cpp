@@ -151,7 +151,7 @@ inline double f(double x) {
 
 int main() {  
 
-    constexpr double z_const=0.5;
+    constexpr double z_const=2.4;
     constexpr double alpha=1.0;//alpha \in (0,2) 
     // 定数の定義
     constexpr double t_start = 0.0;

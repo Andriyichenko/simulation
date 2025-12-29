@@ -1,4 +1,4 @@
-// LTM1_check_var with x_0=1, T=1, z=0.5, a=-1, b=1,alpha=1.5,checking L_n function
+// LTM1_check_var with x_0=1, T=1, z=0.5, a=-1, b=1,alpha=1.5,checking L_n_var function
 
 #include <algorithm>  
 #include <cmath>       

@@ -1,4 +1,4 @@
-//D2LT
+//2DLT
 // 問題：
 // 1.dtは実数ですか
 // 2.z_const実数ですか
@@ -188,7 +188,7 @@ inline State A2(const State& curr, double dt, double Z1, double Z2) {
 
 int main() {  
 
-    double z_const = 2.0 - exp(-1.0);//z_const = 2-exp(-1)
+    double z_const = 1.38;//z_const = 1.38 \approx 1.4
     constexpr double alpha = 1.0;
     constexpr double t_start = 0.0;
     constexpr double t_end = 1.0;
@@ -211,7 +211,7 @@ int main() {
     // CSV ファイル名の設定
     const string dir_path = "../data_source";
     system(("mkdir -p " + dir_path).c_str()); 
-    const string csv_path = dir_path + "/D2LT_data.csv"; 
+    const string csv_path = dir_path + "/2DLT_100_1000_data.csv"; 
     ofstream ofs(csv_path, ios::out | ios::trunc);
     
     if (!ofs) {

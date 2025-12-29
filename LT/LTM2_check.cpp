@@ -152,7 +152,7 @@ inline double f(double x) {
 
 int main() {  
 
-    constexpr double z_const=0.5;//z_constは小さいほど精度が良い
+    constexpr double z_const=2.4;//z_constは小さいほど精度が良い
     constexpr double alpha=1.0;//alpha \in (0,2) 1 と　0.1（分散が小さいが、数値漏れる） と1.9（分散が大きい）
     // 定数の定義
     constexpr double t_start = 0.0;
@@ -195,7 +195,7 @@ int main() {
     // 時間ステップ数のループ
     for (int n = 0; n <= max_n; ++n) {
         const int points = 100 + (100 * n); //(10-50-100-200-400-600-800-1000)
-        const int paths = 8 * points * points;
+        const int paths = 10 * points * points;
         
         const double dt = (t_end - t_start) / (points - 1);
         const double sqrt_dt = sqrt(dt);

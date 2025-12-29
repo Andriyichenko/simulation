@@ -153,7 +153,7 @@ inline double f(double x) {
 
 int main() {  
 
-    constexpr double z_const=1.35;//z_constは小さいほど精度が良い
+    constexpr double z_const=2.4;//z_constは小さいほど精度が良い
     constexpr double alpha=1.0;//alpha \in (0,2) 1 と　0.1（分散が小さいが、数値漏れる） と1.9（分散が大きい）
     // 定数の定義
     constexpr double t_start = 0.0;
