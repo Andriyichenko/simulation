@@ -41,6 +41,7 @@ This module implements a test functional based on the **2D-Local Time** at a poi
 $$
 \sigma(x) = \left( {s(x_2) \atop 0} \ \  {0 \atop s(x_1)} \right),\quad b(x) = \left( {s^{2}(x_2) \atop 0} \ \  {0 \atop s^{2}(x_1)} \right)
 $$
+
 Where,
 
 $$
