@@ -6,22 +6,24 @@ This project contains various simulation schemes for stochastic processes, focus
 
 Please refer to the page 58 ~66 of the paper [*High order polynomial regression approximation schemes in total variation for multidimensional diffusions*](https://www.overleaf.com/project/6801f9a43ca0501e11926ee2)
 
-## Table of Contents
+---
 
-- [Naming Convention](#naming-convention)
-    - [C++ File Naming Convention](#c-file-naming-convention)
-    - [Data Source Naming Convention](#data-source-naming-convention)
-- [Simulation Modules](#simulation-modules)
-    - [1. 2DLT Series](#1-2dlt-series)
-    - [2. D1f Series](#2-d1f-series)
-    - [3. D1S Series (TV-distance Lower Bounds)](#3-d1s-series-tv-distance-lower-bounds)
-    - [4. D2f Series](#4-d2f-series)
-    - [5. D2S Series](#5-d2s-series)
-    - [6. Local Time (LT)](#6-local-time-lt)
-    - [7. Max Measure (MM)](#7-max-measure-mm)
-- [Development Environment](#development-environment)
-    - [Compilation & Execution](#compilation--execution)
+## 📖 Table of Contents
 
+*   **[Naming Convention](#naming-convention)**
+    *   [C++ File Naming Convention](#c-file-naming-convention)
+    *   [Data Source Naming Convention](#data-source-naming-convention)
+*   **[Simulation Modules](#simulation-modules)**
+    *   [1. 2DLT Series](#1-2dlt-series)
+    *   [2. D1f Series](#2-d1f-series)
+    *   [3. D1S Series (TV-distance Lower Bounds)](#3-d1s-series-tv-distance-lower-bounds)
+    *   [4. D2f Series](#4-d2f-series)
+    *   [5. D2S Series](#5-d2s-series)
+    *   [6. Local Time (LT)](#6-local-time-lt)
+    *   [7. Max Measure (MM)](#7-max-measure-mm)
+*   **[Development Environment](#development-environment)**
+    *   [Compilation & Execution](#compilation--execution)
+---
 ## Naming Convention
 
 ### C++ File Naming Convention
