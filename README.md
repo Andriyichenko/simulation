@@ -1,10 +1,26 @@
 # Simulation Project Overview
 
-![C++](https://img.shields.io/badge/c++-%2300599C.svg?style=for-the-badge&logo=c%2B%2B&logoColor=white) ![Python](https://img.shields.io/badge/python-3670A0?style=for-the-badge&logo=python&logoColor=ffdd54) ![Jupyter Notebook](https://img.shields.io/badge/jupyter-%23FA0F00.svg?style=for-the-badge&logo=jupyter&logoColor=white) ![GitHub](https://img.shields.io/badge/github-%23121011.svg?style=for-the-badge&logo=github&logoColor=white)
+![VS Code](https://img.shields.io/badge/Visual%20Studio%20Code-0078d7.svg?style=for-the-badge&logo=visual-studio-code&logoColor=white) ![C++](https://img.shields.io/badge/c++-%2300599C.svg?style=for-the-badge&logo=c%2B%2B&logoColor=white) ![Python](https://img.shields.io/badge/python-3670A0?style=for-the-badge&logo=python&logoColor=ffdd54) ![Jupyter Notebook](https://img.shields.io/badge/jupyter-%23FA0F00.svg?style=for-the-badge&logo=jupyter&logoColor=white) ![GitHub](https://img.shields.io/badge/github-%23121011.svg?style=for-the-badge&logo=github&logoColor=white)
 
 This project contains various simulation schemes for stochastic processes, focusing on different **Test Functionals** and **Approximation Methods**.
 
 Please refer to the page 58 ~66 of the paper [*High order polynomial regression approximation schemes in total variation for multidimensional diffusions*](https://www.overleaf.com/project/6801f9a43ca0501e11926ee2)
+
+## Table of Contents
+
+- [Naming Convention](#naming-convention)
+    - [C++ File Naming Convention](#c-file-naming-convention)
+    - [Data Source Naming Convention](#data-source-naming-convention)
+- [Simulation Modules](#simulation-modules)
+    - [1. 2DLT Series](#1-2dlt-series)
+    - [2. D1f Series](#2-d1f-series)
+    - [3. D1S Series (TV-distance Lower Bounds)](#3-d1s-series-tv-distance-lower-bounds)
+    - [4. D2f Series](#4-d2f-series)
+    - [5. D2S Series](#5-d2s-series)
+    - [6. Local Time (LT)](#6-local-time-lt)
+    - [7. Max Measure (MM)](#7-max-measure-mm)
+- [Development Environment](#development-environment)
+    - [Compilation & Execution](#compilation--execution)
 
 ## Naming Convention
 
@@ -295,3 +311,19 @@ $$
 
 *   **Simulation Plot:** [MM_plot](./Max/MM_plot.ipynb)
 *   **Simulation Code:** [Max](./Max/)
+
+---
+
+## Development Environment
+
+This project is developed using **Visual Studio Code** IDE.
+
+### Compilation & Execution
+To compile and run the C++ simulations, we recommend using the **Code Runner** extension.
+
+*   **OpenMP Support**: The C++ code utilizes **OpenMP** for parallel processing to accelerate simulations.
+*   **Configuration**:
+    *   Essential configuration settings, including include paths for **Eigen** and **OpenMP**, are defined in `.vscode/c_cpp_properties.json` and `.vscode/settings.json`.
+    *   These settings are **mandatory** for successful compilation, as they specify the necessary compiler flags and library paths.
+
+Please refer to the `.vscode/` directory for specific include paths and environment settings.
