@@ -21,6 +21,8 @@ Please refer to the page 58 ~66 of the paper [*High order polynomial regression 
     *   [5. D2S Series](#5-d2s-series)
     *   [6. Local Time (LT)](#6-local-time-lt)
     *   [7. Max Measure (MM)](#7-max-measure-mm)
+    *   [8. Model 1 $\&$ Model 2 (M1$\&$M2)](#8-model-1--model-2-m1--m2)
+
 *   **[Development Environment](#development-environment)**
     *   [Compilation & Execution](#compilation--execution)
 ---
@@ -29,9 +31,15 @@ Please refer to the page 58 ~66 of the paper [*High order polynomial regression 
 ### C++ File Naming Convention
 The file naming convention used throughout this project is as follows:
 
+*   **`M1` / `M2` suffix** (e.g., `LTM1`, `D1fM2`):
+    *   Indicates the specific **Model** used for simulation, as defined in the referenced paper.
+    *   `M1` corresponds to [*Model 1*](#8-model-1--model-2-m1--m2).
+    *   `M2` corresponds to [*Model 2*](#8-model-1--model-2-m1--m2).
+
 *   **`_check` suffix** (e.g., `LTM1_check`):
     *   Represents **self-verification** of a function or scheme.  
     *   These files are used to confirm the behavior of a single scheme or function in isolation.  
+
 
 *   **No suffix** (e.g., `LTM1`):
     *   Represents the **Error** between schemes. 
@@ -44,6 +52,7 @@ The file naming convention used throughout this project is as follows:
 *   **`_all` suffix** (e.g., `D1fM1_all`):
     *   Represents a **combined analysis**. 
     *   These files integrate both the error analysis (difference) and limit calculations into a single executable.
+    *    :warning: *If a folder does not contain an `_all` file, then all simulations corresponding to `_limit` are included in the **no suffix** file.*
 
 *  **`_var` suffix** (e.g., `LTM1_check_var`):
    *  It indicates files simulated using specific values. For instance, `LTM1_check_var` corresponds to `LTM1_check ` with $x_0=1, T=1, z=0.5, a=-1, b=1,\alpha=1.5$. They are mainly used to generate Variance plots
@@ -88,7 +97,7 @@ $$
 We can use, for simplicity, a test functional based on the discrete approximation of the local time at the point $z$ for one component of the process
 
 $$
-F_n(\overline{X}) = f\left(L_n^z(\overline{X}^1)\right).
+F_n(\overline{X}) = f\left(L_n^z(\overline{X}^1)\right).\quad\cdots\text{(2DLT)}
 $$
 
 $$
@@ -120,15 +129,15 @@ $$
 The functional is defined using a bounding function $f(x) = (x \wedge 0) \vee (-100)$ to ensure stability:  
 
 $$
-\bar{F}^E_n(X) = f(D_1(n, X))
+\bar{F}^E_n(X) = f(D_1(n, X))\quad\cdots\text{(D1f\_check)}
 $$
 
 where $D_1(n, X)$ involves first-order increments.  
 
-In this case the limit of $\mathbb{E} [\bar{F}_n^E(X^{[n]}) - \bar{F}_n^E(X^{1,[n]})]$ is: 
+In this case the limit of $\mathbb{E} [\bar{F}_n^E(X^{[n]}) - \bar{F}_n^E(X^{1,[n]})]\quad\cdots\text{(D1f)}$ is: 
 
 $$
-\mathbb{E} \left[ f \left( I_T^0 + \frac{1}{2}\langle I^0 \rangle_T \right) \left( 1 - \exp \left( -I_T^0 - \frac{1}{2}\langle I^0 \rangle_T \right) \right) \right] 
+\mathbb{E} \left[ f \left( I_T^0 + \frac{1}{2}\langle I^0 \rangle_T \right) \left( 1 - \exp \left( -I_T^0 - \frac{1}{2}\langle I^0 \rangle_T \right) \right) \right] \quad\cdots\text{(D1f\_limit)}
 $$
 
 Where
@@ -147,7 +156,7 @@ This module focuses on test functionals for the lower bounds of the Total Variat
 It uses the sign function to define the functional:
 
 $$
-F_n^E(X) = \text{sgn}(D_1(n, X))
+F_n^E(X) = \text{sgn}(D_1(n, X)) \quad\cdots\text{(D1S\_check)}
 $$
 
 Where,
@@ -160,12 +169,22 @@ $$
 \end{aligned}
 $$
 
-This is used to show numerically that approximation rates for Euler schemes are not better than $h_n^0$. 
+This is used to show numerically that approximation rates for Euler schemes are not better than $h_n^0$.
+
+The error is modeled as the expected difference between the benchmark $X^{\mathtt{benchmark}}$ and its order-0.5, order-1.0, and order-1.5 approximations, via the following difference-based simulation formula:  
+
+$$
+\begin{aligned}
+\mathbb{E} \left[ F_n^E(X^{[n]}) - F_n^E(X^{0,[n]}) \right] &\approx \mathbb{E} F_n^E(X^{0,[n]}) (\mathcal{E}_n^1(X^{0,[n]}) - 1) \\
+&\approx \mathbf{E} \mathrm{sgn} \left( \log \mathcal{E}_n^1(X^{0,[n]}) \right) (\mathcal{E}_n^1(X^{0,[n]}) - 1) = \mathbf{E} \left| \mathcal{E}_n^1(X^{0,[n]}) - 1 \right| \quad \dots \text{(D1S)} \\
+&\approx d_{\mathrm{TV}} \left( \mathrm{Law}(X^{[n]}), \mathrm{Law}(X^{0,[n]}) \right),
+\end{aligned}
+$$
 
 The limit can also be computed explicitly
 
 $$
-\mathbf{E} \left| \exp \left( -I_T^0 - \frac{1}{2}\langle I^0 \rangle_T \right) - 1 \right| 
+\mathbf{E} \left| \exp \left( -I_T^0 - \frac{1}{2}\langle I^0 \rangle_T \right) - 1 \right| \quad\cdots\text{(D1S\_limit)}
 $$
 
 Where,
@@ -210,7 +229,7 @@ $$
 Where
 
 $$
-\bar{F}_n^M(X^{[n]}) := h_n^{-1/2} f(\Delta_2(n, X)). 
+\bar{F}_n^M(X^{[n]}) := h_n^{-1/2} f(\Delta_2(n, X)) \quad\cdots\text{(D2f\_check)}
 $$
 
 The limit is as before
@@ -230,7 +249,7 @@ In the case of the sign function this becomes $\mathbb{E}[|I_T^1|]$.
 Similar to D1S, this module defines test functionals for lower bounds of TV-distance but for higher-order terms.
 
 $$
-F_n^M(X) = h_n^{-1/2}\text{sgn}(D_2(n, X))
+F_n^M(X) = h_n^{-1/2}\text{sgn}(D_2(n, X)) \quad\cdots\text{(D2S\_check)}
 $$
 
 where,
@@ -250,8 +269,9 @@ Similarly, we expect to observe that
 
 $$
 \begin{aligned}
-\mathbb{E} \left[ F_n^M(X^{[n]}) - F_n^M(X^{1,[n]}) \right] &\approx \mathbf{E} \text{sgn} \left( \log \mathcal{E}_n^2(X^{0,[n]}) \right) (\mathcal{E}_n^2(X^{0,[n]}) - 1) \\
-&\to \mathbf{E} \text{sgn}(\log(1 + I_T^1))(I_T^1)
+&\mathbb{E} \left[ F_n^M(X^{[n]}) - F_n^M(X^{1,[n]}) \right] \quad\cdots\text{(D2S)} \\ 
+&\approx \mathbf{E} \text{sgn} \left( \log \mathcal{E}_n^2(X^{0,[n]}) \right) (\mathcal{E}_n^2(X^{0,[n]}) - 1) \\
+&\to \mathbf{E} \text{sgn}(\log(1 + I_T^1))(I_T^1) \quad\cdots\text{(D2S\_limit)}
 \end{aligned}
 $$
 
@@ -287,7 +307,7 @@ This module implements a test functional based on the **Local Time** at a point 
 Define discrete approximation of the local time at the point $z$ as
 
 $$
-L_n^z(X) = \sum_{k=1}^n \varphi_n(X_{t_{k,n}})h_n, \quad \varphi_n(x) = \sqrt{\frac{1}{2\pi h_n^\alpha}} e^{-\frac{(x-z)^2}{2h_n^\alpha}}, \quad \alpha \in (0, 2)
+L_n^z(X) = \sum_{k=1}^n \varphi_n(X_{t_{k,n}})h_n \quad\cdots\text{(LT\_check)}, \quad \varphi_n(x) = \sqrt{\frac{1}{2\pi h_n^\alpha}} e^{-\frac{(x-z)^2}{2h_n^\alpha}}, \quad \alpha \in (0, 2)
 $$
 
 The test functional used is $F_n(\overline{X}^\theta) = \arctan(L_n^z(\overline{X}^\theta))$.
@@ -295,7 +315,7 @@ The test functional used is $F_n(\overline{X}^\theta) = \arctan(L_n^z(\overline{
 Particular choice:  $f(x) = \arctan(x)$. We will compare
 
 $$
-\mathbb{E}[F_n(\overline{X})] - \mathbb{E}[F_n(\overline{X}^\alpha)]
+\mathbb{E}[F_n(\overline{X})] - \mathbb{E}[F_n(\overline{X}^\alpha)] \quad\cdots\text{(LT)}
 $$
 
 *   **Simulation Plot:** [LT_plot](./LT/LT_plot.ipynb)
@@ -308,11 +328,59 @@ This module measures errors using the **maximum measure** (strong convergence).
 It compares different schemes (Euler, Milstein, 1.5) using:  
 
 $$
-\mathbb{E} \left[ \max_{i=1,\ldots,n} \|X_{t_{i,n}} - \bar{X}^\theta_{t_{i,n}}\|^2 \right]
+\mathbb{E} \left[ \max_{i=1,\ldots,n} \|X_{t_{i,n}} - \bar{X}^\theta_{t_{i,n}}\|^2 \right] \quad\cdots\text{(M)}
 $$
 
 *   **Simulation Plot:** [MM_plot](./Max/MM_plot.ipynb)
 *   **Simulation Code:** [Max](./Max/)
+
+### 8. Model 1 $\&$ Model 2 (M1 $\&$ M2)
+**Directory:** `*M1/M2`
+
+#### Model 1
+
+*  **M1 benchmark**:
+
+$$
+    X_t^{\mathtt{benchmark}} = \sinh \left( \ln(x + \sqrt{x^2 + 1}) + \frac{ab}{2}t + b W_t \right) 
+$$
+
+* **The SDE for $X_t$ of M1**:
+
+$$
+dX_t = \left( \frac{b^2}{2}X_t + \frac{ab}{2}\sqrt{X_t^2+1} \right) dt + b \sqrt{X_t^2+1} \, dW_t,
+$$
+
+Where,
+
+$a(X)=\frac{b^2}{2}X_t + \frac{ab}{2}\sqrt {X_t^2+1}\ ,\sigma(X)= b \sqrt{X_t^2+1}$
+
+#### Model 2
+
+*  **M2 benchmark**:
+
+$$
+Y_t = e^{at}Y_0 + b \int_0^t e^{a(t-s)} \, dW_s = e^{at} \mathrm{asinh(X_0)}+ b \int_0^t e^{a(t-s)} \, dW_s.
+$$
+
+And then,
+
+$$
+    X_t^{\mathtt{benchmark}} = \sinh(Y_t)
+$$
+
+*  **The SDE for $X_t$ of M2**:
+
+$$
+dX_t = \left[ a \sqrt{1 + X_t^2} \mathrm{asinh}(X_t) + \frac{b^2}{2} X_t \right] dt + b \sqrt{1 + X_t^2} \, dW_t.
+$$
+
+where,
+
+$a(X)=a \sqrt{1 + X_t^2} \mathrm{asinh}(X_t) + \frac{b^2}{2} X_t\, ,\sigma(X) = b \sqrt{1 + X_t^2}$
+
+
+
 
 ---
 
