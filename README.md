@@ -32,12 +32,15 @@ The file naming convention used throughout this project is as follows:
 **Directory:** `2DLT/`
 
 This module implements a test functional based on the **2D-Local Time** at a point $z$. It considers specific examples where:
+
 $$
 \sigma(x) = \begin{pmatrix} s(x_2) & 0 \\ 0 & s(x_1) \end{pmatrix}, \quad b(x) = \begin{pmatrix} s^2(x_2) & 0 \\ 0 & s^2(x_1) \end{pmatrix}
 $$
+
 $$
 s(x) = 2 + \sin x, \quad a(x) = \begin{pmatrix} a_1(x) \\ a_2(x) \end{pmatrix} = \begin{pmatrix} x_2 \\ -x_1 \end{pmatrix}, \quad x_{start} = \begin{pmatrix} 1 \\ 1 \end{pmatrix}, \quad T = 1
 $$
+
 It implements various simulation schemes (Euler, Milstein, 1.5 order) for multidimensional processes.
 
 Define discrete approximation of the local time at the point $z$ as
@@ -55,6 +58,7 @@ $$
 $$
 f(x) = \arctan(x)
 $$
+
 *   **Simulation Plot:** [2D_plot](./2D/2D_plot.ipynb)
 *   **Simulation Code:** [2D](./2D/)
 
@@ -64,16 +68,20 @@ $$
 This module simulates the **D1f series** based on the mathematical definition of $D_1(n, X)=\sum_{k=1}^n \Delta^1(h_n, X_{t_{k-1}}, X_{t_k}) - \frac{1}{2} \sum_{k=1}^n \left[ \Delta^1(h_n, X_{t_{k-1}}, X_{t_k}) \right]^2 $.
 
 where,
+
 $$\begin{aligned}
 \Delta^1(t, x, y) &= \frac{1}{4}b'(x)b(x)t^2 H_t^3(x, y) \\
 &= \frac{1}{2}\sigma'(x)\sigma(x)^3 t^2 \left( \frac{(y-x-a(x)t)^3}{\sigma(x)^6 t^3} - 3\frac{(y-x-a(x)t)}{\sigma(x)^4 t^2} \right) \\
 &= \frac{1}{2}\sigma'(x) \left( \frac{(y-x-a(x)t)^3}{\sigma(x)^3 t} - 3\frac{(y-x-a(x)t)}{\sigma(x)} \right)
-\end{aligned}$$
+\end{aligned}
+$$
 
 The functional is defined using a bounding function $f(x) = (x \wedge 0) \vee (-100)$ to ensure stability:
+
 $$
 \bar{F}^E_n(X) = f(D_1(n, X))
 $$
+
 where $D_1(n, X)$ involves first-order increments.
 
 In this case the limit of $\mathbb{E} [\bar{F}_n^E(X^{[n]}) - \bar{F}_n^E(X^{1,[n]})]$ is: 
@@ -83,6 +91,7 @@ $$
 $$
 
 Where
+
 $$
 I_T^0 = \int_0^T \sqrt{\frac{3}{2}} |\sigma'|(X(s)) dW_s^{(3)}.
 $$
@@ -96,22 +105,30 @@ $$
 
 This module focuses on test functionals for the lower bounds of the Total Variation (TV) distance.
 It uses the sign function to define the functional:
+
 $$
 F_n^E(X) = \text{sgn}(D_1(n, X))
 $$
+
 where,
+
 $$\begin{aligned}
 \Delta^1(t, x, y) &= \frac{1}{4}b'(x)b(x)t^2 H_t^3(x, y) \\
 &= \frac{1}{2}\sigma'(x)\sigma(x)^3 t^2 \left( \frac{(y-x-a(x)t)^3}{\sigma(x)^6 t^3} - 3\frac{(y-x-a(x)t)}{\sigma(x)^4 t^2} \right) \\
 &= \frac{1}{2}\sigma'(x) \left( \frac{(y-x-a(x)t)^3}{\sigma(x)^3 t} - 3\frac{(y-x-a(x)t)}{\sigma(x)} \right)
-\end{aligned}$$
+\end{aligned}
+$$
+
 This is used to show numerically that approximation rates for Euler schemes are not better than $h_n^0$.
 
 And the limitation can be also computed explicitly
+
 $$
 \mathbf{E} \left| \exp \left( -I_T^0 - \frac{1}{2}\langle I^0 \rangle_T \right) - 1 \right| 
 $$
-Where
+
+Where,
+
 $$
 I_T^0 = \int_0^T \sqrt{\frac{3}{2}} |\sigma'|(X(s)) dW_s^{(3)}.
 $$
@@ -124,7 +141,9 @@ $$
 Definite the $D_2$ function:
 $D_2(n, X) = \sum_{k=1}^n \Delta^2(h_n, X_{t_{k-1}}, X_{t_k}) $
 
-Where$$
+Where,
+
+$$
 \begin{aligned}
 \Delta_t^2(x, y) &= \left( \frac{1}{2}a'(x)b(x) + \frac{1}{4}b'(x)a(x) + \frac{1}{8}b''(x)b(x) - \frac{1}{16}b'(x)^2 \right) t^2 H_t^2(x, y) \\
 &\quad + \frac{1}{12}b''(x)b(x)^2 t^3 H_t^4(x, y) \\
@@ -145,6 +164,7 @@ $$
 $$
 
 Where
+
 $$
 \bar{F}_n^M(X^{[n]}) := h_n^{-1/2} f(\Delta_2(n, X)). 
 $$
@@ -164,10 +184,13 @@ In the case of the sign function this becomes $\mathbb{E} [|I_T^1|]$.
 **Directory:** `D2S/`
 
 Similar to D1S, this module defines test functionals for lower bounds of TV-distance but for higher-order terms.
+
 $$
 F_n^M(X) = h_n^{-1/2}\text{sgn}(D_2(n, X))
 $$
-where
+
+where,
+
 $$
 \begin{aligned}
 \Delta_t^2(x, y) &= \left( \frac{1}{2}a'(x)b(x) + \frac{1}{4}b'(x)a(x) + \frac{1}{8}b''(x)b(x) - \frac{1}{16}b'(x)^2 \right) t^2 H_t^2(x, y) \\
@@ -188,7 +211,9 @@ $$
 &\to \mathbf{E} \operatorname{sgn}(\log(1 + I_T^1))(I_T^1)\quad \text{(D2S-limit)}
 \end{aligned}
 $$
-Where
+
+Where,
+
 $$
 I_T^1 = \sqrt{2} \int_0^T |c_2^2||b|^{-1}(X(s)) dW_s^{(2)} + \sqrt{4!} \int_0^T |c_4^2| b^{-2}(X(s)) dW_s^{(4)}
 $$
@@ -221,6 +246,7 @@ Define discrete approximation of the local time at the point $z$ as
 $$
 L_n^z(X) = \sum_{k=1}^n \varphi_n(X_{t_{k,n}})h_n, \quad \varphi_n(x) = \sqrt{\frac{1}{2\pi h_n^\alpha}} e^{-\frac{(x-z)^2}{2h_n^\alpha}}, \quad \alpha \in (0, 2)
 $$
+
 The test functional used is $F_n(\overline{X}^\theta) = \arctan(L_n^z(\overline{X}^\theta))$.
 
 Particular choice: $f(x) = \operatorname{arctg} x$. We will compare
@@ -237,6 +263,7 @@ $$
 
 This module measures errors using the **maximum norm** (strong convergence).
 It compares different schemes (Euler, Milstein, 1.5) using:
+
 $$
 \mathbb{E} \left[ \max_{i=1,...,n} \|X_{t_{i,n}} - \bar{X}^\theta_{t_{i,n}}\|^2 \right]
 $$
