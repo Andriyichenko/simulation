@@ -175,7 +175,7 @@ There is no theoretic prediction for the behavior of $\mathbb{E} \left[F_n^M(X^{
 In this set-up one may also consider
 
 $$
-\textrm{E} \left[\bar{F}_n^M(X^{[n]}) - \bar{F}_n^M(X^{1,[n]})\right] \quad \text{D2f}
+\textrm{E} \left[\bar{F}_n^M(X^{[n]}) - \bar{F}_n^M(X^{1,[n]})\right] \quad \text{(D2f)}
 $$
 
 Where
@@ -187,7 +187,7 @@ $$
 The limit is as before
 
 $$
-\mathbb{E} \left[ f \left(I_T^1\right) I_T^1 \right]. \quad \text{D2f-limit}
+\mathbb{E} \left[ f \left(I_T^1\right) I_T^1 \right]. \quad \text{(D2f-limit)}
 $$
 
 In the case of the sign function this becomes $\mathbb{E}[|I_T^1|]$. 
@@ -272,10 +272,10 @@ $$
 *   **Simulation Plot:** [LT_plot](./LT/LT_plot.ipynb)
 *   **Simulation Code:** [LT](./LT/)
 
-### 7. Max Norm (MM)
+### 7. Max Measure (MM)
 **Directory:** `Max/`
 
-This module measures errors using the **maximum norm** (strong convergence).
+This module measures errors using the **maximum Measure** (strong convergence).
 It compares different schemes (Euler, Milstein, 1. 5) using:  
 
 $$
