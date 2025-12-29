@@ -5,23 +5,25 @@
 This project contains various simulation schemes for stochastic processes, focusing on different `Test Functionals` and `Approximation Methods`.
 
 Please refer to the page 58 ~66 of the paper *High order polynomial regression approximation schemes in total variation for multidimensional diffusions*
+
 ## Naming Convention
 
 The file naming convention used throughout this project is as follows:
 
 *   **`_check` suffix** (e.g., `LTM1_check`):
-    *   Represents **self-verification** of a function or scheme.
-    *   These files are used to confirm the behavior of a single scheme or function in isolation.
+    *   Represents **self-verification** of a function or scheme.  
+    *   These files are used to confirm the behavior of a single scheme or function in isolation.  
 
 *   **No suffix** (e.g., `LTM1`):
-    *   Represents the **Error** between schemes.
+    *   Represents the **Error** between schemes. 
     *   These files typically calculate the difference between two methods using a specific formula to analyze **Convergence** or **Error Rates**.
 
 *   **`_limit` suffix** (e.g., `D1fM1_limit`):
-    *   Represents the **direct calculation of the limitation**.
-    *   These files focus solely on computing the limiting value.
+    *   Represents the **direct calculation of the limitation**. 
+    *   These files focus solely on computing the limiting value.  
+
 *   **`_all` suffix** (e.g., `D1fM1_all`):
-    *   Represents a **combined analysis**.
+    *   Represents a **combined analysis**. 
     *   These files integrate both the error analysis (difference) and limitation calculations into a single executable.
 
 ---
@@ -31,14 +33,14 @@ The file naming convention used throughout this project is as follows:
 ### 1. 2DLT Series
 **Directory:** `2DLT/`
 
-This module implements a test functional based on the **2D-Local Time** at a point $z$. It considers specific examples where:
+This module implements a test functional based on the **2D-Local Time** at a point $z$. It considers specific examples where:  
 
 $$
 \sigma(x) = \begin{pmatrix} s(x_2) & 0 \\ 0 & s(x_1) \end{pmatrix}, \quad b(x) = \begin{pmatrix} s^2(x_2) & 0 \\ 0 & s^2(x_1) \end{pmatrix}
 $$
 
 $$
-s(x) = 2 + \sin x, \quad a(x) = \begin{pmatrix} a_1(x) \\ a_2(x) \end{pmatrix} = \begin{pmatrix} x_2 \\ -x_1 \end{pmatrix}, \quad x_{start} = \begin{pmatrix} 1 \\ 1 \end{pmatrix}, \quad T = 1
+s(x) = 2 + \sin x, \quad a(x) = \begin{pmatrix} a_1(x) \\ a_2(x) \end{pmatrix} = \begin{pmatrix} x_2 \\ -x_1 \end{pmatrix}, \quad x_{\text{start}} = \begin{pmatrix} 1 \\ 1 \end{pmatrix}, \quad T = 1
 $$
 
 It implements various simulation schemes (Euler, Milstein, 1.5 order) for multidimensional processes.
@@ -49,10 +51,10 @@ $$
 L_n^z(X) = \sum_{k=1}^n \varphi_n(X_{t_{k,n}})h_n, \quad \varphi_n(x) = \sqrt{\frac{1}{2\pi h_n^\alpha}} e^{-\frac{(x-z)^2}{2h_n^\alpha}}, \quad \alpha \in (0, 2)
 $$
 
-We can use, for simplicity, a test functional based on the discrete approximation of the local time at the point \(z\) for one component of the process
+We can use, for simplicity, a test functional based on the discrete approximation of the local time at the point $z$ for one component of the process
 
 $$
-F_n(\overline{X}) = f\!\left(L_n^z(\overline{X}^1)\right).
+F_n(\overline{X}) = f\left(L_n^z(\overline{X}^1)\right).
 $$
 
 $$
@@ -65,24 +67,29 @@ $$
 ### 2. D1f Series
 **Directory:** `D1f/`
 
-This module simulates the **D1f series** based on the mathematical definition of $D_1(n, X)=\sum_{k=1}^n \Delta^1(h_n, X_{t_{k-1}}, X_{t_k}) - \frac{1}{2} \sum_{k=1}^n \left[ \Delta^1(h_n, X_{t_{k-1}}, X_{t_k}) \right]^2 $.
+This module simulates the **D1f series** based on the mathematical definition of 
+
+$$
+D_1(n, X)=\sum_{k=1}^n \Delta^1(h_n, X_{t_{k-1}}, X_{t_k}) - \frac{1}{2} \sum_{k=1}^n \left[ \Delta^1(h_n, X_{t_{k-1}}, X_{t_k}) \right]^2
+$$
 
 where,
 
-$$\begin{aligned}
+$$
+\begin{aligned}
 \Delta^1(t, x, y) &= \frac{1}{4}b'(x)b(x)t^2 H_t^3(x, y) \\
 &= \frac{1}{2}\sigma'(x)\sigma(x)^3 t^2 \left( \frac{(y-x-a(x)t)^3}{\sigma(x)^6 t^3} - 3\frac{(y-x-a(x)t)}{\sigma(x)^4 t^2} \right) \\
 &= \frac{1}{2}\sigma'(x) \left( \frac{(y-x-a(x)t)^3}{\sigma(x)^3 t} - 3\frac{(y-x-a(x)t)}{\sigma(x)} \right)
 \end{aligned}
 $$
 
-The functional is defined using a bounding function $f(x) = (x \wedge 0) \vee (-100)$ to ensure stability:
+The functional is defined using a bounding function $f(x) = (x \wedge 0) \vee (-100)$ to ensure stability:  
 
 $$
 \bar{F}^E_n(X) = f(D_1(n, X))
 $$
 
-where $D_1(n, X)$ involves first-order increments.
+where $D_1(n, X)$ involves first-order increments.  
 
 In this case the limit of $\mathbb{E} [\bar{F}_n^E(X^{[n]}) - \bar{F}_n^E(X^{1,[n]})]$ is: 
 
@@ -93,9 +100,8 @@ $$
 Where
 
 $$
-I_T^0 = \int_0^T \sqrt{\frac{3}{2}} |\sigma'|(X(s)) dW_s^{(3)}.
+I_T^0 = \int_0^T \sqrt{\frac{3}{2}} |\sigma'|(X(s)) dW_s^{(3)}.  
 $$
-
 
 *   **Simulation Plot:** [D1f_plot](./D1f/D1f_plot.ipynb)
 *   **Simulation Code:** [D1f](./D1f/)
@@ -112,14 +118,15 @@ $$
 
 where,
 
-$$\begin{aligned}
+$$
+\begin{aligned}
 \Delta^1(t, x, y) &= \frac{1}{4}b'(x)b(x)t^2 H_t^3(x, y) \\
 &= \frac{1}{2}\sigma'(x)\sigma(x)^3 t^2 \left( \frac{(y-x-a(x)t)^3}{\sigma(x)^6 t^3} - 3\frac{(y-x-a(x)t)}{\sigma(x)^4 t^2} \right) \\
 &= \frac{1}{2}\sigma'(x) \left( \frac{(y-x-a(x)t)^3}{\sigma(x)^3 t} - 3\frac{(y-x-a(x)t)}{\sigma(x)} \right)
 \end{aligned}
 $$
 
-This is used to show numerically that approximation rates for Euler schemes are not better than $h_n^0$.
+This is used to show numerically that approximation rates for Euler schemes are not better than $h_n^0$. 
 
 And the limitation can be also computed explicitly
 
@@ -138,8 +145,12 @@ $$
 
 ### 4. D2f Series
 **Directory:** `D2f/`
-Definite the $D_2$ function:
-$D_2(n, X) = \sum_{k=1}^n \Delta^2(h_n, X_{t_{k-1}}, X_{t_k}) $
+
+Define the $D_2$ function: 
+
+$$
+D_2(n, X) = \sum_{k=1}^n \Delta^2(h_n, X_{t_{k-1}}, X_{t_k})
+$$
 
 Where,
 
@@ -154,8 +165,7 @@ $$
 \end{aligned}
 $$
 
-
-There is no theoretic prediction for the behavior of $\mathbb{E} \left[F_n^M(X^{[n]}) - F_n^M(X^{0,[n]})\right]$ , the theoretical bound here $O(n^{1/2})$, but what we have observed in the earlier simulations is that this quantity slightly grows but definitely not at the rate $n^{1/2}$.
+There is no theoretic prediction for the behavior of $\mathbb{E} \left[F_n^M(X^{[n]}) - F_n^M(X^{0,[n]})\right]$, the theoretical bound here $O(n^{1/2})$, but what we have observed in the earlier simulations is that the rate is very close to $O(n^{-1})$. 
 
 In this set-up one may also consider
 
@@ -172,10 +182,10 @@ $$
 The limit is as before
 
 $$
-\mathbb{E} \left[ f \left(I_T^1\right) I_T^1 \right]. \tag{D2f-limit}
+\mathbb{E} \left[ f \left(I_T^1\right) I_T^1 \right].  \tag{D2f-limit}
 $$
 
-In the case of the sign function this becomes $\mathbb{E} [|I_T^1|]$.
+In the case of the sign function this becomes $\mathbb{E}[|I_T^1|]$. 
 
 *   **Simulation Plot:** [D2f_plot](./D2f/D2f_plot.ipynb)
 *   **Simulation Code:** [D2f](./D2f/)
@@ -206,23 +216,21 @@ Similarly, we expect to observe that
 
 $$
 \begin{aligned}
-\mathbb{E} \left[ F_n^M(X^{[n]}) - F_n^M(X^{1,[n]}) \right] \quad \text{(D2S)}\\
-&\approx \mathbf{E} \operatorname{sgn} \left( \log \mathcal{E}_n^2(X^{0,[n]}) \right) (\mathcal{E}_n^2(X^{0,[n]}) - 1) \\
-&\to \mathbf{E} \operatorname{sgn}(\log(1 + I_T^1))(I_T^1)\quad \text{(D2S-limit)}
+\mathbb{E} \left[ F_n^M(X^{[n]}) - F_n^M(X^{1,[n]}) \right] &\approx \mathbf{E} \text{sgn} \left( \log \mathcal{E}_n^2(X^{0,[n]}) \right) (\mathcal{E}_n^2(X^{0,[n]}) - 1) \\
+&\to \mathbf{E} \text{sgn}(\log(1 + I_T^1))(I_T^1)
 \end{aligned}
 $$
 
 Where,
 
 $$
-I_T^1 = \sqrt{2} \int_0^T |c_2^2||b|^{-1}(X(s)) dW_s^{(2)} + \sqrt{4!} \int_0^T |c_4^2| b^{-2}(X(s)) dW_s^{(4)}
+I_T^1 = \sqrt{2} \int_0^T |c_2^2||b|^{-1}(X(s)) dW_s^{(2)} + \sqrt{4! } \int_0^T |c_4^2| b^{-2}(X(s)) dW_s^{(4)}
 $$
-
 
 $$
 \begin{aligned}
 c_4^2(x) &= \frac{1}{12}b''(x)b(x)^2 \\
-c_2^2(x) &= \frac{1}{2}a'(x)b(x) + \frac{1}{4}b'(x)a(x) + \frac{1}{8}b''(x)b(x) - \frac{1}{16}b'(x)^2.
+c_2^2(x) &= \frac{1}{2}a'(x)b(x) + \frac{1}{4}b'(x)a(x) + \frac{1}{8}b''(x)b(x) - \frac{1}{16}b'(x)^2. 
 \end{aligned}
 $$
 
@@ -232,7 +240,7 @@ $$
 \mathbb{E} \left[F_n^M(X^{[n]}) - F_n^M(X^{2,[n]})\right] = O(n^{-1/2}).
 $$
 
-It is used to analyze the Milstein scheme's approximation rates.
+It is used to analyze the Milstein scheme's approximation rates. 
 
 *   **Simulation Plot:** [D2S_plot](./D2S/D2S_plot.ipynb)
 *   **Simulation Code:** [D2S](./D2S/)
@@ -240,7 +248,8 @@ It is used to analyze the Milstein scheme's approximation rates.
 ### 6. Local Time (LT)
 **Directory:** `LT/`
 
-This module implements a test functional based on the **Local Time** at a point $z$.
+This module implements a test functional based on the **Local Time** at a point $z$. 
+
 Define discrete approximation of the local time at the point $z$ as
 
 $$
@@ -249,10 +258,10 @@ $$
 
 The test functional used is $F_n(\overline{X}^\theta) = \arctan(L_n^z(\overline{X}^\theta))$.
 
-Particular choice: $f(x) = \operatorname{arctg} x$. We will compare
+Particular choice:  $f(x) = \text{arctg}(x)$. We will compare
 
 $$
-\mathbb{E} [F_n(\overline{X})] - \mathbb{E} [F_n(\overline{X}^\alpha)] \tag{LT}
+\mathbb{E}[F_n(\overline{X})] - \mathbb{E}[F_n(\overline{X}^\alpha)]
 $$
 
 *   **Simulation Plot:** [LT_plot](./LT/LT_plot.ipynb)
@@ -262,10 +271,10 @@ $$
 **Directory:** `Max/`
 
 This module measures errors using the **maximum norm** (strong convergence).
-It compares different schemes (Euler, Milstein, 1.5) using:
+It compares different schemes (Euler, Milstein, 1. 5) using:  
 
 $$
-\mathbb{E} \left[ \max_{i=1,...,n} \|X_{t_{i,n}} - \bar{X}^\theta_{t_{i,n}}\|^2 \right]
+\mathbb{E} \left[ \max_{i=1,\ldots,n} \|X_{t_{i,n}} - \bar{X}^\theta_{t_{i,n}}\|^2 \right]
 $$
 
 *   **Simulation Plot:** [MM_plot](./Max/MM_plot.ipynb)
