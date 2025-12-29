@@ -26,6 +26,9 @@ The file naming convention used throughout this project is as follows:
     *   Represents a **combined analysis**. 
     *   These files integrate both the error analysis (difference) and limitation calculations into a single executable.
 
+*  **`_var` suffix** (e.g., `LTM1_check_var`):
+   *  It indicates files simulated using specific values. For instance, `LTM1_check_var` corresponds to `LTM1_check ` with $x_0=1, T=1, z=0.5, a=-1, b=1,\alpha=1.5$. There are mainly used to generate Varience plots
+
 ---
 
 ## Simulation Modules
