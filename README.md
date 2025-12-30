@@ -21,7 +21,7 @@ Please refer to the page 58 ~66 of the paper [*High order polynomial regression 
     *   [5. D2S Series](#5-d2s-series)
     *   [6. Local Time (LT)](#6-local-time-lt)
     *   [7. Max Measure (MM)](#7-max-measure-mm)
-    *   [8. Model 1 $\&$ Model 2 (M1$\&$M2)](#8-model-1--model-2-m1--m2)
+    *   [8. Model 1 & Model 2 (M1&M2)](#8-model-1--model-2-m1--m2)
 
 *   **[Development Environment](#development-environment)**
     *   [Compilation & Execution](#compilation--execution)
@@ -129,7 +129,7 @@ $$
 The functional is defined using a bounding function $f(x) = (x \wedge 0) \vee (-100)$ to ensure stability:  
 
 $$
-\bar{F}^E_n(X) = f(D_1(n, X))\quad\cdots\text{(D1f\_check)}
+\bar{F}^E_n(X) = f(D_1(n, X))\quad\cdots\text{(D1f\\_check)}
 $$
 
 where $D_1(n, X)$ involves first-order increments.  
@@ -137,7 +137,7 @@ where $D_1(n, X)$ involves first-order increments.
 In this case the limit of $\mathbb{E} [\bar{F}_n^E(X^{[n]}) - \bar{F}_n^E(X^{1,[n]})]\quad\cdots\text{(D1f)}$ is: 
 
 $$
-\mathbb{E} \left[ f \left( I_T^0 + \frac{1}{2}\langle I^0 \rangle_T \right) \left( 1 - \exp \left( -I_T^0 - \frac{1}{2}\langle I^0 \rangle_T \right) \right) \right] \quad\cdots\text{(D1f\_limit)}
+\mathbb{E} \left[ f \left( I_T^0 + \frac{1}{2}\langle I^0 \rangle_T \right) \left( 1 - \exp \left( -I_T^0 - \frac{1}{2}\langle I^0 \rangle_T \right) \right) \right] \quad\cdots\text{(D1f\\_limit)}
 $$
 
 Where
@@ -156,7 +156,7 @@ This module focuses on test functionals for the lower bounds of the Total Variat
 It uses the sign function to define the functional:
 
 $$
-F_n^E(X) = \text{sgn}(D_1(n, X)) \quad\cdots\text{(D1S\_check)}
+F_n^E(X) = \text{sgn}(D_1(n, X)) \quad\cdots\text{(D1S\\_check)}
 $$
 
 Where,
@@ -184,7 +184,7 @@ $$
 The limit can also be computed explicitly
 
 $$
-\mathbf{E} \left| \exp \left( -I_T^0 - \frac{1}{2}\langle I^0 \rangle_T \right) - 1 \right| \quad\cdots\text{(D1S\_limit)}
+\mathbf{E} \left| \exp \left( -I_T^0 - \frac{1}{2}\langle I^0 \rangle_T \right) - 1 \right| \quad\cdots\text{(D1S\\_limit)}
 $$
 
 Where,
@@ -229,13 +229,13 @@ $$
 Where
 
 $$
-\bar{F}_n^M(X^{[n]}) := h_n^{-1/2} f(\Delta_2(n, X)) \quad\cdots\text{(D2f\_check)}
+\bar{F}_n^M(X^{[n]}) := h_n^{-1/2} f(\Delta_2(n, X)) \quad\cdots\text{(D2f\\_check)}
 $$
 
 The limit is as before
 
 $$
-\mathbb{E} \left[ f \left(I_T^1\right) I_T^1 \right]. \quad\cdots \text{(D2f-limit)}
+\mathbb{E} \left[ f \left(I_T^1\right) I_T^1 \right]. \quad\cdots \text{(D2f\\_limit)}
 $$
 
 In the case of the sign function this becomes $\mathbb{E}[|I_T^1|]$. 
@@ -249,7 +249,7 @@ In the case of the sign function this becomes $\mathbb{E}[|I_T^1|]$.
 Similar to D1S, this module defines test functionals for lower bounds of TV-distance but for higher-order terms.
 
 $$
-F_n^M(X) = h_n^{-1/2}\text{sgn}(D_2(n, X)) \quad\cdots\text{(D2S\_check)}
+F_n^M(X) = h_n^{-1/2}\text{sgn}(D_2(n, X)) \quad\cdots\text{(D2S\\_check)}
 $$
 
 where,
@@ -271,7 +271,7 @@ $$
 \begin{aligned}
 &\mathbb{E} \left[ F_n^M(X^{[n]}) - F_n^M(X^{1,[n]}) \right] \quad\cdots\text{(D2S)} \\ 
 &\approx \mathbf{E} \text{sgn} \left( \log \mathcal{E}_n^2(X^{0,[n]}) \right) (\mathcal{E}_n^2(X^{0,[n]}) - 1) \\
-&\to \mathbf{E} \text{sgn}(\log(1 + I_T^1))(I_T^1) \quad\cdots\text{(D2S\_limit)}
+&\to \mathbf{E} \text{sgn}(\log(1 + I_T^1))(I_T^1) \quad\cdots\text{(D2S\\_limit)}
 \end{aligned}
 $$
 
@@ -307,7 +307,7 @@ This module implements a test functional based on the **Local Time** at a point 
 Define discrete approximation of the local time at the point $z$ as
 
 $$
-L_n^z(X) = \sum_{k=1}^n \varphi_n(X_{t_{k,n}})h_n \quad\cdots\text{(LT\_check)}, \quad \varphi_n(x) = \sqrt{\frac{1}{2\pi h_n^\alpha}} e^{-\frac{(x-z)^2}{2h_n^\alpha}}, \quad \alpha \in (0, 2)
+L_n^z(X) = \sum_{k=1}^n \varphi_n(X_{t_{k,n}})h_n \quad\cdots\text{(LT\\_check)}, \quad \varphi_n(x) = \sqrt{\frac{1}{2\pi h_n^\alpha}} e^{-\frac{(x-z)^2}{2h_n^\alpha}}, \quad \alpha \in (0, 2)
 $$
 
 The test functional used is $F_n(\overline{X}^\theta) = \arctan(L_n^z(\overline{X}^\theta))$.
@@ -334,7 +334,7 @@ $$
 *   **Simulation Plot:** [MM_plot](./Max/MM_plot.ipynb)
 *   **Simulation Code:** [Max](./Max/)
 
-### 8. Model 1 $\&$ Model 2 (M1 $\&$ M2)
+### 8. Model 1 & Model 2 (M1&M2)
 **Directory:** `*M1/M2`
 
 #### Model 1
