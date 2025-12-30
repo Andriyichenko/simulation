@@ -33,10 +33,19 @@ Please refer to the page 58 ~66 of the paper [*High order polynomial regression 
 ### C++ File Naming Convention
 The file naming convention used throughout this project is as follows:
 
+*   **`D1` / `D2` prefix** (e.g., `D1fM1`, `D2S`):
+    *   Indicates that the simulation is based on the functions $D_1(n, X)$ / $D_2(n, X)$.
+    *   `D1` refers to the simulation of $D_1(n, X)$.
+    *   `D2` refers to the simulation of $D_2(n, X)$.
+    *   For specific formulas and definitions, please refer to the relevant sections in [Simulation Modules](#simulation-modules).
+
 *   **`M1` / `M2` suffix** (e.g., `LTM1`, `D1fM2`):
     *   Indicates the specific **Model** used for simulation, as defined in the referenced paper.
     *   `M1` corresponds to [*Model 1*](#8-model-1--model-2-m1m2).
     *   `M2` corresponds to [*Model 2*](#8-model-1--model-2-m1m2).
+    
+
+
 
 *   **`_check` suffix** (e.g., `LTM1_check`):
     *   Represents **self-verification** of a function or scheme.  
@@ -58,6 +67,8 @@ The file naming convention used throughout this project is as follows:
 
 *  **`_var` suffix** (e.g., `LTM1_check_var`):
    *  It indicates files simulated using specific values. `LTM1_check_var` corresponds to `LTM1_check ` with $x_0=1, T=1, z=0.5, a=-1, b=1,\alpha=1.5$. They are mainly used to generate variance plots
+
+
 
 ### Data Source Naming Convention
 The files in the `data_source/` directory follow a naming convention that links them to their generating C++ files and simulation parameters:
