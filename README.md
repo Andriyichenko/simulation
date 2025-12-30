@@ -6,6 +6,8 @@ This project contains various simulation schemes for stochastic processes, focus
 
 Please refer to the page 58 ~66 of the paper [*High order polynomial regression approximation schemes in total variation for multidimensional diffusions*](https://www.overleaf.com/project/6801f9a43ca0501e11926ee2)
 
+<!-- $\text{X\\_Y}$ \\_表示在github里面出现X_Y -->
+
 ---
 
 ## 📖 Table of Contents
@@ -33,8 +35,8 @@ The file naming convention used throughout this project is as follows:
 
 *   **`M1` / `M2` suffix** (e.g., `LTM1`, `D1fM2`):
     *   Indicates the specific **Model** used for simulation, as defined in the referenced paper.
-    *   `M1` corresponds to [*Model 1*](#8-model-1--model-2-m1--m2).
-    *   `M2` corresponds to [*Model 2*](#8-model-1--model-2-m1--m2).
+    *   `M1` corresponds to [*Model 1*](#8-model-1--model-2-m1m2).
+    *   `M2` corresponds to [*Model 2*](#8-model-1--model-2-m1m2).
 
 *   **`_check` suffix** (e.g., `LTM1_check`):
     *   Represents **self-verification** of a function or scheme.  
@@ -55,7 +57,7 @@ The file naming convention used throughout this project is as follows:
     *    :warning: *If a folder does not contain an `_all` file, then all simulations corresponding to `_limit` are included in the **no suffix** file.*
 
 *  **`_var` suffix** (e.g., `LTM1_check_var`):
-   *  It indicates files simulated using specific values. For instance, `LTM1_check_var` corresponds to `LTM1_check ` with $x_0=1, T=1, z=0.5, a=-1, b=1,\alpha=1.5$. They are mainly used to generate Variance plots
+   *  It indicates files simulated using specific values. `LTM1_check_var` corresponds to `LTM1_check ` with $x_0=1, T=1, z=0.5, a=-1, b=1,\alpha=1.5$. They are mainly used to generate variance plots
 
 ### Data Source Naming Convention
 The files in the `data_source/` directory follow a naming convention that links them to their generating C++ files and simulation parameters:
@@ -379,7 +381,7 @@ where,
 
 $a(X)=a \sqrt{1 + X_t^2} \mathrm{asinh}(X_t) + \frac{b^2}{2} X_t\, ,\sigma(X) = b \sqrt{1 + X_t^2}$
 
-
+Please refer to the page 59 ~ 61 of the [*paper*](https://www.overleaf.com/project/6801f9a43ca0501e11926ee2)
 
 
 ---
