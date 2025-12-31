@@ -24,7 +24,7 @@ Please refer to the page 58 ~66 of the paper [*High order polynomial regression 
     *   [6. Local Time (LT)](#6-local-time-lt)
     *   [7. Max Measure (MM)](#7-max-measure-mm)
     *   [8. Model 1 & Model 2 (M1&M2)](#8-model-1--model-2-m1m2)
-* **[Calculation](#9-calculation)**
+* **[Calculation](#calculation)**
 
 *   **[Development Environment](#development-environment)**
     *   [Compilation & Execution](#compilation--execution)
