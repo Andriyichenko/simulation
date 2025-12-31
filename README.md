@@ -24,6 +24,7 @@ Please refer to the page 58 ~66 of the paper [*High order polynomial regression 
     *   [6. Local Time (LT)](#6-local-time-lt)
     *   [7. Max Measure (MM)](#7-max-measure-mm)
     *   [8. Model 1 & Model 2 (M1&M2)](#8-model-1--model-2-m1m2)
+* **[Calculation](#9-calculation)**
 
 *   **[Development Environment](#development-environment)**
     *   [Compilation & Execution](#compilation--execution)
@@ -81,6 +82,18 @@ The files in the `data_source/` directory follow a naming convention that links 
     *   This convention applies to all variations including `_limit`, `_all`, and `_var`, ensuring a clear mapping between the data and the code used to produce it.
 
 ---
+
+<!-- \[
+H_t^{112}(x,y)
+= \frac{r_1^{2}\,r_2}{t^{3}\,s(x_2)^{4}\,s(x_1)^{2}}
+-\frac{r_2}{t^{2}\,s(x_2)^{2}\,s(x_1)^{2}} 
+\]
+
+\[
+H_t^{221}(x,y)
+= \frac{r_2^{2}\,r_1}{t^{3}\,s(x_1)^{4}\,s(x_2)^{2}}
+-\frac{r_1}{t^{2}\,s(x_1)^{2}\,s(x_2)^{2}} 
+\] -->
 
 ## Simulation Modules
 
@@ -366,7 +379,9 @@ $$
 
 Where,
 
-$a(X)=\frac{b^2}{2}X_t + \frac{ab}{2}\sqrt {X_t^2+1}\ ,\sigma(X)= b \sqrt{X_t^2+1}$
+$$
+a(X)=\frac{b^2}{2}X_t + \frac{ab}{2}\sqrt {X_t^2+1}\ ,\sigma(X)= b \sqrt{X_t^2+1}
+$$
 
 #### Model 2
 
@@ -390,9 +405,25 @@ $$
 
 where,
 
-$a(X)=a \sqrt{1 + X_t^2} \mathrm{asinh}(X_t) + \frac{b^2}{2} X_t\, ,\sigma(X) = b \sqrt{1 + X_t^2}$
+$$
+a(X)=a \sqrt{1 + X_t^2} \mathrm{asinh}(X_t) + \frac{b^2}{2} X_t\, ,\sigma(X) = b \sqrt{1 + X_t^2}
+$$
 
 Please refer to the page 59 ~ 61 of the [*paper*](https://www.overleaf.com/project/6801f9a43ca0501e11926ee2)
+
+---
+
+## Calculation
+**Directory:** `Calculation/`
+
+This module contains the detailed mathematical derivations for the higher-order Hermite polynomials used in the simulations, specifically $H^{112}_t(x,y)$, $H^{221}_t(x,y)$ of $\Delta_t^1$ and $H^{1222}_t(x,y)$ of $\Delta_t^2$ and so on.
+
+*   **Compile File `.tex` :** `higher_order_hermite_calculation.tex`
+*  **PDF File :** *[higher_order_hermite_calculation](./Calculation/out/higher_order_hermite_calculation.pdf)*
+*   **Content:**
+    *   Setup and definitions of $\sigma(x)$ and $b(x)$.
+    *   Derivation of centralized variables and standardized variables.
+    *   Step-by-step calculation of $H^{i,j,k, \cdots}_t(x,y)$ of $\Delta_t^1$ and $\Delta_t^2$ based on the general formula.(please refer to the page 53, Eq. A.5 or A.7 of the *[PAPER](https://www.overleaf.com/project/6801f9a43ca0501e11926ee2)*
 
 
 ---

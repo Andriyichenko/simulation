@@ -1,0 +1,261 @@
+\documentclass{article}
+\usepackage{amsmath, amssymb, amsfonts}
+\DeclareMathOperator{\diag}{diag}
+\usepackage[margin=1in]{geometry}
+\usepackage[colorlinks=true,linkcolor=blue,urlcolor=blue,citecolor=blue]{hyperref}
+
+\begin{document}
+
+\section{Calculation of Hermite Polynomials $H^{112}_t(x,y)$ and $H^{221}_t(x,y)$}
+
+\texttt{we need to compute the third-order Hermite polynomials $H^{112}_t(x,y)$ and $H^{221}_t(x,y)$ of $\Delta_t^1$\\ please refer to the page $65\sim 66$ of the \href{https://www.overleaf.com/project/6801f9a43ca0501e11926ee2}{PAPER} }
+\subsection{Setup and Definitions}
+Given the diffusion matrix $\sigma(x)$:
+\[
+\sigma(x) = \begin{pmatrix} s(x_2) & 0 \\ 0 & s(x_1) \end{pmatrix} = \diag\big(s(x_2), s(x_1)\big)
+\]
+The covariance matrix $b(x)$ is defined as $b(x) = \sigma(x)^2$:
+\[
+b(x) = \begin{pmatrix} s(x_2)^2 & 0 \\ 0 & s(x_1)^2 \end{pmatrix} = \diag\big(s(x_2)^2, s(x_1)^2\big)
+\]
+Its inverse $b^{-1}(x)$ is:
+\[
+b^{-1}(x) = \begin{pmatrix} \frac{1}{s(x_2)^2} & 0 \\ 0 & \frac{1}{s(x_1)^2} \end{pmatrix} = \diag\left(\frac{1}{s(x_2)^2}, \frac{1}{s(x_1)^2}\right)
+\]
+We denote the components of the inverse matrix as $(b^{-1})_{ij}$. Thus:
+\[
+(b^{-1})_{11} = \frac{1}{s(x_2)^2}, \quad (b^{-1})_{22} = \frac{1}{s(x_1)^2}, \quad (b^{-1})_{12} = (b^{-1})_{21} = 0
+\]
+
+\subsection{Centralized Variables}
+Let $r$ be the centered spatial increment (accounting for drift $a(x)$):
+\[
+r = y - x - a(x)t \implies \begin{cases} r_1 = y_1 - x_1 - a_1(x)t \\ r_2 = y_2 - x_2 - a_2(x)t \end{cases}
+\]
+We define the standardized variable $u = b^{-1}(x)r$. In component form:
+\[
+u_i = \sum_{j=1}^d (b^{-1})_{ij} r_j
+\]
+Substituting our specific diagonal $b^{-1}$:
+\[
+u_1 = (b^{-1})_{11} r_1 = \frac{r_1}{s(x_2)^2}, \quad u_2 = (b^{-1})_{22} r_2 = \frac{r_2}{s(x_1)^2}
+\]
+
+\subsection{General Formula for Third-Order Hermite Polynomials}
+
+According to page 53 of the \href{https://www.overleaf.com/project/6801f9a43ca0501e11926ee2}{PAPER}, the general formula for the third-order multi-index Hermite polynomial $H^{ijk}_t(x,y)$ is:
+\[
+H^{ijk}_t(x,y) = \frac{1}{t^3} u_i u_j u_k - \frac{1}{t^2} \left( (b^{-1})_{ij} u_k + (b^{-1})_{ik} u_j + (b^{-1})_{jk} u_i \right)
+\]
+\newpage
+\subsection{Calculation of $H^{112}_t(x,y)$}
+
+We set indices $(i,j,k) = (1,1,2)$.\\
+
+\noindent
+\textbf{Term$_1$ of $H^{112}_t$ :}
+\[
+\text{Term}_1 = \frac{1}{t^3} u_1 u_1 u_2 = \frac{1}{t^3} (u_1)^2 u_2
+\]
+Substituting $u_1$ and $u_2$:
+\[
+\text{Term}_1 = \frac{1}{t^3} \left( \frac{r_1}{s(x_2)^2} \right)^2 \left( \frac{r_2}{s(x_1)^2} \right) = \frac{r_1^2 r_2}{t^3 s(x_2)^4 s(x_1)^2}
+\]
+
+\noindent
+\textbf{Term$_2$ of $H^{112}_t$ :}\\
+
+We need to evaluate the sum $S = (b^{-1})_{11} u_2 + (b^{-1})_{12} u_1 + (b^{-1})_{12} u_1$.
+Using $(b^{-1})_{12} = (b^{-1})_{21} = 0$:
+\[
+S = (b^{-1})_{11} u_2 + 0 + 0 = \frac{1}{s(x_2)^2} \cdot \frac{r_2}{s(x_1)^2} = \frac{r_2}{s(x_2)^2 s(x_1)^2}
+\]
+Thus, the second part of the formula is:
+\[
+\text{Term}_2 = -\frac{1}{t^2} S = -\frac{r_2}{t^2 s(x_2)^2 s(x_1)^2}
+\]
+
+\noindent
+\textbf{Final Expression for $H^{112}_t$}
+Combining Term$_1$ and Term$_2$:
+\[
+\boxed{
+H^{112}_t(x,y) = \frac{\big(y_1 - x_1 - a_1(x)t\big)^2 \big(y_2 - x_2 - a_2(x)t\big)}{t^3 s(x_2)^4 s(x_1)^2} - \frac{y_2 - x_2 - a_2(x)t}{t^2 s(x_2)^2 s(x_1)^2}
+}
+\]
+
+\subsection{Calculation of $H^{221}_t(x,y)$}
+
+We set indices $(i,j,k) = (2,2,1)$.\\
+
+\noindent
+\textbf{Term$_1$ of $H^{221}_t$ :}
+\[
+\text{Term}_1 = \frac{1}{t^3} u_2 u_2 u_1 = \frac{1}{t^3} (u_2)^2 u_1
+\]
+Substituting $u_1$ and $u_2$:
+\[
+\text{Term}_1 = \frac{1}{t^3} \left( \frac{r_2}{s(x_1)^2} \right)^2 \left( \frac{r_1}{s(x_2)^2} \right) = \frac{r_2^2 r_1}{t^3 s(x_1)^4 s(x_2)^2}
+\]
+
+\noindent
+\textbf{Term$_2$ of $H^{221}_t$ :}\\
+
+We evaluate the sum $S = (b^{-1})_{22} u_1 + (b^{-1})_{21} u_2 + (b^{-1})_{21} u_2$.
+Using $(b^{-1})_{21} = (b^{-1})_{12} = 0$:
+\[
+S = (b^{-1})_{22} u_1 + 0 + 0 = \frac{1}{s(x_1)^2} \cdot \frac{r_1}{s(x_2)^2} = \frac{r_1}{s(x_1)^2 s(x_2)^2}
+\]
+Thus, the second part of the formula is:
+\[
+\text{Term}_2 = -\frac{1}{t^2} S = -\frac{r_1}{t^2 s(x_1)^2 s(x_2)^2}
+\]
+
+\noindent
+\subsection{Final Expression for $H^{221}_t$}
+Combining Term$_1$ and Term$_2$:
+\[
+\boxed{
+H^{221}_t(x,y) = \frac{\big(y_2 - x_2 - a_2(x)t\big)^2 \big(y_1 - x_1 - a_1(x)t\big)}{t^3 s(x_1)^4 s(x_2)^2} - \frac{y_1 - x_1 - a_1(x)t}{t^2 s(x_1)^2 s(x_2)^2}
+}
+\]
+
+\section{Calculation of Hermite Polynomials of Orders 2 and 4}
+\texttt{we need to compute the third-order Hermite polynomials $H^{11}_t(x,y), H^{12}_t(x,y), H^{22}_t(x,y), H^{1111}_t(x,y),H^{1112}_t(x,y),H^{1122}_t(x,y),H^{1222}_t(x,y),H^{2222}_t(x,y)$ of $\Delta_t^2$\\ please refer to the page $65\sim 66$ of the \href{https://www.overleaf.com/project/6801f9a43ca0501e11926ee2}{PAPER} }
+\subsection{Two-Order Hermite Polynomials}
+\subsubsection{Calculation of $H^{11}_t$}
+Setting $(i,j)=(1,1)$:
+\[
+H^{11}_t(x,y) = \frac{1}{t^2} u_1^2 - \frac{1}{t} (b^{-1})_{11}.
+\]
+Substituting $u_1 = \frac{r_1}{s(x_2)^2}$ and $(b^{-1})_{11} = \frac{1}{s(x_2)^2}$:
+\[
+\boxed{
+H^{11}_t(x,y) = \frac{r_1^2}{t^2 s(x_2)^4} - \frac{1}{t s(x_2)^2} = \frac{\bigl(y_1-x_1-a_1(x)t\bigr)^2}{t^2\,s(x_2)^4}
+-\frac{1}{t\,s(x_2)^2}
+}
+\]
+
+\subsubsection{Calculation of $H^{22}_t$}
+Setting $(i,j)=(2,2)$:
+\[
+H^{22}_t(x,y) = \frac{1}{t^2} u_2^2 - \frac{1}{t} (b^{-1})_{22}.
+\]
+Substituting $u_2 = \frac{r_2}{s(x_1)^2}$ and $(b^{-1})_{22} = \frac{1}{s(x_1)^2}$:
+\[
+\boxed{
+H^{22}_t(x,y) = \frac{r_2^2}{t^2 s(x_1)^4} - \frac{1}{t s(x_1)^2} = \frac{\bigl(y_2-x_2-a_2(x)t\bigr)^2}{t^2\,s(x_1)^4}
+-\frac{1}{t\,s(x_1)^2}
+}
+\]
+
+\subsubsection{Calculation of $H^{12}_t$}
+Setting $(i,j)=(1,2)$:
+\[
+H^{12}_t(x,y) = \frac{1}{t^2} u_1 u_2 - \frac{1}{t} (b^{-1})_{12}.
+\]
+Since $(b^{-1})_{12} = 0$:
+\[
+\boxed{
+H^{12}_t(x,y) = \frac{r_1 r_2}{t^2 s(x_2)^2 s(x_1)^2} \frac{\bigl(y_1-x_1-a_1(x)t\bigr)\bigl(y_2-x_2-a_2(x)t\bigr)}{t^2\,s(x_2)^2\,s(x_1)^2}
+}
+\]
+
+\subsection{Fourth-Order Hermite Polynomials}
+
+We use the recurrence relation (The page 53, Eq. A.5 or A.7 of the \href{https://www.overleaf.com/project/6801f9a43ca0501e11926ee2}{PAPER}) to derive higher orders. For any multi-index $\alpha = (i_1, \dots, i_n)$, adding an index $j$ yields:
+\[
+H^{j,\alpha}_t(x,y) = \frac{1}{t} u_j H^{\alpha}_t(x,y) - \sum_{k=1}^n (b^{-1})_{j, i_k} H^{\alpha \setminus \{i_k\}}_t(x,y)\quad\ (k\in (1,\dots,n))
+\]
+Since $b$ is diagonal, the sum only survives when $i_k = j$.
+
+\subsubsection{Calculation of $H^{1111}_t$}
+This is effectively the 1D Hermite polynomial of degree 4 in the variable $r_1$.
+From the recurrence on $H^{111}_t$ (derived similarly):
+\[
+H^{111}_t = \frac{u_1^3}{t^3} - \frac{3 (b^{-1})_{11} u_1}{t^2}.
+\]
+Applying the recurrence for $H^{1111}_t$ (adding index 1 to $H^{111}_t$):
+\[
+H^{1111}_t = \frac{u_1}{t} H^{111}_t - \frac{3 (b^{-1})_{11}}{t} H^{11}_t.
+\]
+Substituting the expressions:
+\begin{align*}
+H^{1111}_t
+&= \frac{u_1}{t} \left( \frac{u_1^3}{t^3} - \frac{3 (b^{-1})_{11} u_1}{t^2} \right)
+ - \frac{3 (b^{-1})_{11}}{t} \left( \frac{u_1^2}{t^2} - \frac{(b^{-1})_{11}}{t} \right)\\
+&= \frac{u_1^4}{t^4} - \frac{3 (b^{-1})_{11} u_1^2}{t^3} - \frac{3 (b^{-1})_{11} u_1^2}{t^3} + \frac{3 (b^{-1})_{11}^2}{t^2}\\
+&= \frac{u_1^4}{t^4} - \frac{6 (b^{-1})_{11} u_1^2}{t^3} + \frac{3 (b^{-1})_{11}^2}{t^2}.
+\end{align*}
+Substituting $u_1 = \dfrac{r_1}{s(x_2)^2}$ and $(b^{-1})_{11} = \dfrac{1}{s(x_2)^2}$:
+
+\begin{align*}
+H^{1111}_t(x,y) &= \frac{r_1^4}{t^4 s(x_2)^8} - \frac{6 r_1^2}{t^3 s(x_2)^6} + \frac{3}{t^2 s(x_2)^4}\\
+                &= \boxed{\frac{\bigl(y_1-x_1-a_1(x)t\bigr)^4}{t^4\,s(x_2)^8}
+- \frac{6\bigl(y_1-x_1-a_1(x)t\bigr)^2}{t^3\,s(x_2)^6}
++ \frac{3}{t^2\,s(x_2)^4}}    
+\end{align*}
+
+\subsubsection{Calculation of $H^{2222}_t$}
+By symmetry with $H^{1111}_t$, replacing index 1 with 2:
+
+\begin{align*}
+H^{2222}_t(x,y) &= \frac{r_2^4}{t^4 s(x_1)^8} - \frac{6 r_2^2}{t^3 s(x_1)^6} + \frac{3}{t^2 s(x_1)^4}\\
+                &= \boxed{\frac{\bigl(y_2-x_2-a_2(x)t\bigr)^4}{t^4\,s(x_1)^8}
+- \frac{6\bigl(y_2-x_2-a_2(x)t\bigr)^2}{t^3\,s(x_1)^6}
++ \frac{3}{t^2\,s(x_1)^4}}    
+\end{align*}
+
+\subsubsection{Calculation of $H^{1112}_t$}
+We add index 2 to $H^{111}_t$. Since $(b^{-1})_{21}=0$, the correction terms in the recurrence vanish:
+\[
+H^{1112}_t = \frac{u_2}{t} H^{111}_t - \sum_{k=1}^3 (b^{-1})_{21} H_t^{11} = \frac{u_2}{t} H^{111}_t.
+\]
+Using $H^{111}_t = \frac{u_1^3}{t^3} - \frac{3 (b^{-1})_{11} u_1}{t^2}$:
+\[
+H^{1112}_t = \frac{u_2}{t} \left( \frac{u_1^3}{t^3} - \frac{3 (b^{-1})_{11} u_1}{t^2} \right) = \frac{u_1^3 u_2}{t^4} - \frac{3 (b^{-1})_{11} u_1 u_2}{t^3}.
+\]
+Substituting variables:
+\begin{align*}
+H^{1112}_t(x,y) &= \frac{r_1^3 r_2}{t^4 s(x_2)^6 s(x_1)^2} - \frac{3 r_1 r_2}{t^3 s(x_2)^4 s(x_1)^2}\\
+                &= \boxed{_t^{1112}(x,y)
+= \frac{\bigl(y_1-x_1-a_1(x)t\bigr)^3\bigl(y_2-x_2-a_2(x)t\bigr)}{t^4\,s(x_2)^6\,s(x_1)^2}
+-\frac{3\bigl(y_1-x_1-a_1(x)t\bigr)\bigl(y_2-x_2-a_2(x)t\bigr)}{t^3\,s(x_2)^4\,s(x_1)^2}}
+\end{align*}
+
+\subsubsection{Calculation of $H^{1222}_t$}
+By symmetry with $H^{1112}_t$, swapping indices 1 and 2:
+\begin{align*}
+H^{1222}_t(x,y) &= \frac{r_2^3 r_1}{t^4 s(x_1)^6 s(x_2)^2} - \frac{3 r_2 r_1}{t^3 s(x_1)^4 s(x_2)^2}\\
+                &= \boxed{\frac{\bigl(y_1-x_1-a_1(x)t\bigr)\bigl(y_2-x_2-a_2(x)t\bigr)^3}{t^4\,s(x_2)^2\,s(x_1)^6}
+-\frac{3\bigl(y_1-x_1-a_1(x)t\bigr)\bigl(y_2-x_2-a_2(x)t\bigr)}{t^3\,s(x_2)^2\,s(x_1)^4}}
+\end{align*}
+
+\subsubsection{Calculation of $H^{1122}_t$}
+We add index 2 to $H^{112}_t$. Recall (from previous derivation) that:
+\[
+H^{112}_t = \frac{u_1^2 u_2}{t^3} - \frac{(b^{-1})_{11} u_2}{t^2}.
+\]
+Using the recurrence to add index 2:
+\begin{align*}
+H^{1122}_t &= \frac{u_2}{t} H^{112}_t - \left((b^{-1})_{21} H^{12}_t + (b^{-1})_{21} H^{12}_t +(b^{-1})_{22} H^{11}_t\right)\\
+          &= \frac{u_2}{t} H^{112}_t - \frac{(b^{-1})_{22}}{t} H^{11}_t.
+\end{align*}
+Where,$(b^{-1})_{21} = 0$\\
+The sum over indices in $H^{112}$ (indices 1,1,2) involves $(b^{-1})_{21}, (b^{-1})_{21}, (b^{-1})_{22}$. Only the last term survives.
+Substituting expressions:
+\[
+H^{1122}_t = \frac{u_2}{t} \left( \frac{u_1^2 u_2}{t^3} - \frac{(b^{-1})_{11} u_2}{t^2} \right) - \frac{(b^{-1})_{22}}{t} \left( \frac{u_1^2}{t^2} - \frac{(b^{-1})_{11}}{t} \right)
+\]
+\[
+= \frac{u_1^2 u_2^2}{t^4} - \frac{(b^{-1})_{11} u_2^2}{t^3} - \frac{(b^{-1})_{22} u_1^2}{t^3} + \frac{(b^{-1})_{11} (b^{-1})_{22}}{t^2}.
+\]
+Substituting variables:
+\begin{align*}
+H^{1122}_t(x,y) &= \frac{r_1^2 r_2^2}{t^4 s(x_2)^4 s(x_1)^4} - \frac{r_2^2}{t^3 s(x_2)^2 s(x_1)^4} - \frac{r_1^2}{t^3 s(x_1)^2 s(x_2)^4} + \frac{1}{t^2 s(x_2)^2 s(x_1)^2}\\
+                &= \boxed{\frac{\bigl(y_1-x_1-a_1(x)t\bigr)^2\bigl(y_2-x_2-a_2(x)t\bigr)^2}{t^4\,s(x_2)^4\,s(x_1)^4}
+-\frac{\bigl(y_1-x_1-a_1(x)t\bigr)^2}{t^3\,s(x_2)^4\,s(x_1)^2}-\frac{\bigl(y_2-x_2-a_2(x)t\bigr)^2}{t^3\,s(x_2)^2\,s(x_1)^4}
++\frac{1}{t^2\,s(x_2)^2\,s(x_1)^2}}
+\end{align*}
+
+\end{document}
