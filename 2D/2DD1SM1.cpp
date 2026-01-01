@@ -1,4 +1,4 @@
-// 2DSD1M1.cpp
+// 2DD1SM1.cpp
 
 #include <Eigen/Dense>
 #include <algorithm>  
@@ -368,7 +368,7 @@ int main() {
 
     const string dir_path = "../data_source";
     system(("mkdir -p " + dir_path).c_str()); 
-    const string csv_path = dir_path + "/2DSD1M1_100_1000_data.csv"; 
+    const string csv_path = dir_path + "/2DD1SM1_100_1000_data.csv"; 
     ofstream ofs(csv_path, ios::out | ios::trunc);
     
     if (!ofs) {
