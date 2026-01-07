@@ -1,4 +1,4 @@
-// 2DD1SM3.cpp
+// 2DD2SM3.cpp
 
 #include <Eigen/Dense>
 #include <algorithm>  
@@ -48,25 +48,12 @@ inline double f(double L) {
     return atan(L);
 }
 
-// Clipping function
-inline double f_clip(double x) {
-    double min_val = -1.0, max_val = 4.0;
-    return min(max_val, max(x, min_val));
-}
-
-// s(x) = 2 + min(max(-1, x), 4)
-inline double s_func(double x) { return 2.0 + f_clip(x); }
-// s'(x) = 1 if -1 <= x <= 4 else 0
-inline double ds_func(double x) {
-    if (x >= -1.0 && x <= 4.0) {
-        return 1.0;
-    } else {
-        return 0.0;
-    }
-}
-// s''(x) = 0
-inline double dds_func(double x) { return 0.0; }
-
+// s(x) = 2 + sin(x)
+inline double s_func(double x) { return 2.0 + sin(x); }
+// s'(x) = cos(x)
+inline double ds_func(double x) { return cos(x); }
+// s''(x) = -sin(x)
+inline double dds_func(double x) { return -sin(x); }
 
 // ========================================
 // Hermite Polynomials Helper Functions
@@ -357,7 +344,6 @@ inline State A2(const State& curr, double dt, double Z1, double Z2) {
 }
 
 
-
 // ========================================
 // Main Program
 // ========================================
@@ -369,7 +355,7 @@ int main() {
     constexpr double mu = 0.0;
     constexpr double sigma = 1.0;
     
-    const State x0_state = Vector2d(1, 2);
+    const State x0_state = Vector2d(1.0, 1.0);
     constexpr int max_n = 9;
 
     vector<double> A(max_n + 1, 0.0);
@@ -381,7 +367,7 @@ int main() {
 
     const string dir_path = "../data_source";
     system(("mkdir -p " + dir_path).c_str()); 
-    const string csv_path = dir_path + "/2DD1SM3_100_1000_test_data.csv"; 
+    const string csv_path = dir_path + "/2DD2SM3_100_1000_data.csv"; 
     ofstream ofs(csv_path, ios::out | ios::trunc);
     
     if (!ofs) {
@@ -415,7 +401,7 @@ int main() {
                 State st_mil = x0_state;
                 State st_15  = x0_state;
                 
-                double D_A0  = 0.0, D_A1  = 0.0, D_A2  = 0.0,D_A0_sq  = 0.0, D_A1_sq  = 0.0, D_A2_sq  = 0.0;
+                double D_A0  = 0.0, D_A1  = 0.0, D_A2  = 0.0;
                 double sum_A0 = 0.0, sum_A1 = 0.0, sum_A2 = 0.0;
                 
                 for (int idx = 1; idx < points; ++idx) {
@@ -426,15 +412,9 @@ int main() {
                     State next_mil = A1(st_mil, dt, Z1, Z2);
                     State next_15  = A2(st_15, dt, Z1, Z2);
 
-                    D_A0  += Delta1(st_em, next_em, dt);
-                    D_A1 += Delta1(st_mil, next_mil, dt);
-                    D_A2  += Delta1(st_15, next_15, dt);
-
-                    D_A0_sq  += Delta1(st_em, next_em, dt) * Delta1(st_em, next_em, dt);
-                    D_A1_sq += Delta1(st_mil, next_mil, dt) * Delta1(st_mil, next_mil, dt);
-                    D_A2_sq  += Delta1(st_15, next_15, dt) * Delta1(st_15, next_15, dt);
-                    
-
+                    D_A0  += Delta2(st_em, next_em, dt);
+                    D_A1 += Delta2(st_mil, next_mil, dt);
+                    D_A2  += Delta2(st_15, next_15, dt);
 
                     st_em  = next_em;
                     st_mil = next_mil;
@@ -446,16 +426,16 @@ int main() {
                     // cout << "D_A0 = " << D_A0 << ", D_A1 = " << D_A1 << ", D_A2 = " << D_A2 << "\n";
                 }
                 
-                sum_A0 = compute_sum_state(D_A0, D_A0_sq);
-                sum_A1 = compute_sum_state(D_A1, D_A1_sq);
-                sum_A2 = compute_sum_state(D_A2, D_A2_sq);
+                sum_A0 = D_A0;
+                sum_A1 = D_A1;
+                sum_A2 = D_A2;
 
-                S += sgn(sum_A0);
-                Sm += sgn(sum_A1);
-                S_1_5 += sgn(sum_A2);
-                B += sgn(sum_A0) * sgn(sum_A0);
-                Bm += sgn(sum_A1) * sgn(sum_A1);
-                B_1_5 += sgn(sum_A2) * sgn(sum_A2);
+                S += sgn(sum_A0) / sqrt(dt);
+                Sm += sgn(sum_A1) / sqrt(dt);
+                S_1_5 += sgn(sum_A2) / sqrt(dt);
+                B += sgn(sum_A0) * sgn(sum_A0) / dt;
+                Bm += sgn(sum_A1) * sgn(sum_A1) /dt;
+                B_1_5 += sgn(sum_A2) * sgn(sum_A2) /dt;
 
                 // cout << "Path " << p << " Step(paths) " << paths << "\n";
                 // cout << "sum_A0 = " << sum_A0 << ", sum_A1 = " << sum_A1 << ", sum_A2 = " << sum_A2 << "\n";
@@ -475,15 +455,15 @@ int main() {
         cout << "-------------------------------------------------" << n << "\n";      
         cout << setprecision(10) << "points = " << points << "\n";       
         cout << "-------------------------------------------------" <<  "\n";      
-        cout << setprecision(18) << "Var EM      = " << E[n] << "\n";         
-        cout << setprecision(18) << "Var Milstein = " << Em[n] << "\n";         
-        cout << setprecision(18) << "Var 1.5     = " << E_1_5[n] << "\n";      
-        cout << setprecision(18) << "Mean EM     = " << A[n] << "\n";          
-        cout << setprecision(18) << "Mean Milstein = " << Am[n] << "\n";         
-        cout << setprecision(18) << "Mean 1.5    = " << A_1_5[n] << "\n";      
+        cout << setprecision(10) << "Var EM      = " << E[n] << "\n";         
+        cout << setprecision(10) << "Var Milstein = " << Em[n] << "\n";         
+        cout << setprecision(10) << "Var 1.5     = " << E_1_5[n] << "\n";      
+        cout << setprecision(10) << "Mean EM     = " << A[n] << "\n";          
+        cout << setprecision(10) << "Mean Milstein = " << Am[n] << "\n";         
+        cout << setprecision(10) << "Mean 1.5    = " << A_1_5[n] << "\n";      
 
         ofs << n << "," << points << ","  
-            << fixed << setprecision(10) 
+            << fixed << setprecision(18) 
             << E[n] << "," << Em[n] << "," << E_1_5[n] << "," 
             << A[n] << "," << Am[n] << "," << A_1_5[n] << endl;
     }
