@@ -34,6 +34,11 @@ Please refer to the page 58 ~66 of the paper [*High order polynomial regression 
 ### C++ File Naming Convention
 The file naming convention used throughout this project is as follows:
 
+*   **`M1` / `M2` suffix** (e.g., `LTM1`, `D1fM2`):
+    *   Indicates the specific **Model** used for simulation, as defined in the referenced paper.
+    *   `M1` corresponds to [*Model 1*](#8-model-1--model-2-m1m2).
+    *   `M2` corresponds to [*Model 2*](#8-model-1--model-2-m1m2).
+
 *   **`D1` / `D2` prefix** (e.g., `D1fM1`, `D2S`):
     *   Indicates that the simulation is based on the functions $D_1(n, X)$ / $D_2(n, X)$.
     *   `D1` refers to the simulation of $D_1(n, X)$.
@@ -43,13 +48,6 @@ The file naming convention used throughout this project is as follows:
 *   **`2D` prefix** (e.g., `2DLT`, `2DD1S`):
     *   Indicates that the simulation is performed in a **2-dimensional** setting.
     *   `2DD1S` refers to the simulation of $\mathrm{sgn}(D_1(n, X))$ in 2D, typically involving the **Sign** functional or related metrics.
-
-*   **`M1` / `M2` suffix** (e.g., `LTM1`, `D1fM2`):
-    *   Indicates the specific **Model** used for simulation, as defined in the referenced paper.
-    *   `M1` corresponds to [*Model 1*](#8-model-1--model-2-m1m2).
-    *   `M2` corresponds to [*Model 2*](#8-model-1--model-2-m1m2).
-    
-
 
 
 *   **`_check` suffix** (e.g., `LTM1_check`):

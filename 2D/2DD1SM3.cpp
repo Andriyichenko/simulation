@@ -1,4 +1,4 @@
-// 2DD1SM1.cpp
+// 2DD1SM3.cpp
 
 #include <Eigen/Dense>
 #include <algorithm>  
@@ -136,7 +136,6 @@ inline double H1122(double t, double r1, double r2, double S1, double S2) {
 // ========================================
 // Delta Calculations (Delta^1 & Delta^2)
 // ========================================
-
 // Delta^1 Formula
 inline double Delta1(const State& x, const State& y, double t) {
     // 1. Prepare variables
@@ -368,7 +367,7 @@ int main() {
 
     const string dir_path = "../data_source";
     system(("mkdir -p " + dir_path).c_str()); 
-    const string csv_path = dir_path + "/2DD1SM1_100_1000_data.csv"; 
+    const string csv_path = dir_path + "/2DD1SM3_100_1000_data.csv"; 
     ofstream ofs(csv_path, ios::out | ios::trunc);
     
     if (!ofs) {
@@ -388,6 +387,7 @@ int main() {
 
         double S = 0.0, Sm = 0.0, S_1_5 = 0.0;
         double B = 0.0, Bm = 0.0, B_1_5 = 0.0;
+
 
         #pragma omp parallel reduction(+:S,Sm,S_1_5,B,Bm,B_1_5) 
         {
@@ -431,14 +431,14 @@ int main() {
                 sum_A1 = compute_sum_state(D_A1, D_A1_sq);
                 sum_A2 = compute_sum_state(D_A2, D_A2_sq);
 
-                S += sgn(fabs(sum_A0));
-                Sm += sgn(fabs(sum_A1));
-                S_1_5 += sgn(fabs(sum_A2));
-                B += sgn(fabs(sum_A0)) * sgn(fabs(sum_A0));
-                Bm += sgn(fabs(sum_A1)) * sgn(fabs(sum_A1));
-                B_1_5 += sgn(fabs(sum_A2)) * sgn(fabs(sum_A2));
+                S += sgn(sum_A0);
+                Sm += sgn(sum_A1);
+                S_1_5 += sgn(sum_A2);
+                B += sgn(sum_A0) * sgn(sum_A0);
+                Bm += sgn(sum_A1) * sgn(sum_A1);
+                B_1_5 += sgn(sum_A2) * sgn(sum_A2);
             }
-        }
+       } // End of parallel region
 
         const double inv_paths = 1.0 / paths;
         A[n] = S * inv_paths;
