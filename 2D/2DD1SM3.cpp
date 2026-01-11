@@ -28,6 +28,11 @@ constexpr int sgn(double x) {
     return (x > 0) - (x < 0);
 }
 
+inline double f_sgn(double x, double min_val = -100.0, double max_val = 0.0) {
+    return max(min_val, min(x, max_val));
+}
+
+
 // Compute sum involving delta value
 inline double compute_sum_state(double delta_val,double delta_val_sq) {
     return delta_val - 0.5 * delta_val_sq;  
@@ -54,6 +59,9 @@ inline double f_clip(double x) {
     return min(max_val, max(x, min_val));
 }
 
+
+
+
 // s(x) = 2 + min(max(-1, x), 4)
 inline double s_func(double x) { return 2.0 + f_clip(x); }
 // s'(x) = 1 if -1 <= x <= 4 else 0
@@ -64,6 +72,12 @@ inline double ds_func(double x) {
         return 0.0;
     }
 }
+
+// inline double s_func(double x) { return 1.0; }
+//inline double ds_func(double x) { return 0.0; }
+
+
+
 // s''(x) = 0
 inline double dds_func(double x) { return 0.0; }
 
@@ -157,9 +171,11 @@ inline double Delta1(const State& x, const State& y, double t) {
     double ds_x1 = ds_func(x(0));
     double ds_x2 = ds_func(x(1));
 
-    // a(x) = [x2, -x1]
+    //a(x) = [x2, -x1]
     double a1 = x(1);
     double a2 = -x(0);
+    // double a1 = 0.0;
+    // double a2 = 0.0;
 
     // r = y - x - a(x)t
     double r1 = y(0) - x(0) - a1 * t;
@@ -381,7 +397,7 @@ int main() {
 
     const string dir_path = "../data_source";
     system(("mkdir -p " + dir_path).c_str()); 
-    const string csv_path = dir_path + "/2DD1SM3_100_1000_test_data.csv"; 
+    const string csv_path = dir_path + "/2DD1SM3_100_1000_test1_data.csv"; 
     ofstream ofs(csv_path, ios::out | ios::trunc);
     
     if (!ofs) {
@@ -450,12 +466,12 @@ int main() {
                 sum_A1 = compute_sum_state(D_A1, D_A1_sq);
                 sum_A2 = compute_sum_state(D_A2, D_A2_sq);
 
-                S += sgn(sum_A0);
-                Sm += sgn(sum_A1);
-                S_1_5 += sgn(sum_A2);
-                B += sgn(sum_A0) * sgn(sum_A0);
-                Bm += sgn(sum_A1) * sgn(sum_A1);
-                B_1_5 += sgn(sum_A2) * sgn(sum_A2);
+                S += f_sgn(sum_A0);
+                Sm += f_sgn(sum_A1);
+                S_1_5 += f_sgn(sum_A2);
+                B += f_sgn(sum_A0) * f_sgn(sum_A0);
+                Bm += f_sgn(sum_A1) * f_sgn(sum_A1);
+                B_1_5 += f_sgn(sum_A2) * f_sgn(sum_A2);
 
                 // cout << "Path " << p << " Step(paths) " << paths << "\n";
                 // cout << "sum_A0 = " << sum_A0 << ", sum_A1 = " << sum_A1 << ", sum_A2 = " << sum_A2 << "\n";
