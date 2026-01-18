@@ -172,8 +172,8 @@ inline double Delta1(const State& x, const State& y, double t) {
     double ds_x2 = ds_func(x(1));
 
     //a(x) = [x2, -x1]
-    double a1 = x(1);
-    double a2 = -x(0);
+    double a1 = x(0);
+    double a2 = x(1);
     // double a1 = 0.0;
     // double a2 = 0.0;
 
@@ -385,7 +385,7 @@ int main() {
     constexpr double mu = 0.0;
     constexpr double sigma = 1.0;
     
-    const State x0_state = Vector2d(1, 2);
+    const State x0_state = Vector2d(1, 1);
     constexpr int max_n = 9;
 
     vector<double> A(max_n + 1, 0.0);
@@ -397,7 +397,7 @@ int main() {
 
     const string dir_path = "../data_source";
     system(("mkdir -p " + dir_path).c_str()); 
-    const string csv_path = dir_path + "/2DD1SM3_100_1000_test1_data.csv"; 
+    const string csv_path = dir_path + "/2DD1SM3_100_1000_data.csv"; 
     ofstream ofs(csv_path, ios::out | ios::trunc);
     
     if (!ofs) {
@@ -466,12 +466,12 @@ int main() {
                 sum_A1 = compute_sum_state(D_A1, D_A1_sq);
                 sum_A2 = compute_sum_state(D_A2, D_A2_sq);
 
-                S += f_sgn(sum_A0);
-                Sm += f_sgn(sum_A1);
-                S_1_5 += f_sgn(sum_A2);
-                B += f_sgn(sum_A0) * f_sgn(sum_A0);
-                Bm += f_sgn(sum_A1) * f_sgn(sum_A1);
-                B_1_5 += f_sgn(sum_A2) * f_sgn(sum_A2);
+                S += sgn(sum_A0);
+                Sm += sgn(sum_A1);
+                S_1_5 += sgn(sum_A2);
+                B += sgn(sum_A0) * sgn(sum_A0);
+                Bm += sgn(sum_A1) * sgn(sum_A1);
+                B_1_5 += sgn(sum_A2) * sgn(sum_A2);
 
                 // cout << "Path " << p << " Step(paths) " << paths << "\n";
                 // cout << "sum_A0 = " << sum_A0 << ", sum_A1 = " << sum_A1 << ", sum_A2 = " << sum_A2 << "\n";

@@ -22,7 +22,7 @@ Please refer to the page 58 ~66 of the paper [*High order polynomial regression 
     *   [4. D2f Series](#4-d2f-series)
     *   [5. D2S Series](#5-d2s-series)
     *   [6. Local Time (LT)](#6-local-time-lt)
-    *   [7. Max Measure (MM)](#7-max-measure-mm)
+    *   [7. Max Measure (M)](#7-max-measure-m)
     *   [8. Model 1 & Model 2 (M1&M2)](#8-model-1--model-2-m1m2)
 * **[Calculation](#calculation)**
 
@@ -49,6 +49,16 @@ The file naming convention used throughout this project is as follows:
     *   Indicates that the simulation is performed in a **2-dimensional** setting.
     *   `2DD1S` refers to the simulation of $\mathrm{sgn}(D_1(n, X))$ in 2D, typically involving the **Sign** functional or related metrics.
 
+ *   **`LT` prefix** (e.g., `LTM1`, `LTM2`):
+        *   Indicates that the simulation focuses on the **Local Time** approximation.
+        *   This prefix corresponds to the methods described in the [Local Time (LT)](#6-local-time-lt) section.
+        *   Files with this prefix typically implement the discrete approximation of local time $L_n^z(X)$ and related test functionals.
+
+
+*   **`M` prefix** (e.g., `MM1`, `MM2`):
+    *   Indicates that the simulation focuses on the **Max Measure** (strong convergence).
+    *   This prefix corresponds to the methods described in the [Max Measure (M)](#7-max-measure-mm) section.
+    *   Files with this prefix typically calculate the error defined by the maximum difference over the path, specifically $\mathbb{E} \left[ \max_{i=1,\ldots,n} \|X_{t_{i,n}} - \bar{X}_{t_{i,n}}\|^2 \right]$.
 
 *   **`_check` suffix** (e.g., `LTM1_check`):
     *   Represents **self-verification** of a function or scheme.  
@@ -349,7 +359,7 @@ $$
 *   **Simulation Plot:** [LT_plot](./LT/LT_plot.ipynb)
 *   **Simulation Code:** [LT](./LT/)
 
-### 7. Max Measure (MM)
+### 7. Max Measure (M)
 **Directory:** `Max/`
 
 This module measures errors using the **maximum measure** (strong convergence).
