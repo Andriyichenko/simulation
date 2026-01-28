@@ -63,7 +63,10 @@ The file naming convention used throughout this project is as follows:
 *   **`M` prefix** (e.g., `MM1`, `MM2`):
     *   Indicates that the simulation focuses on the **Max Measure** (strong convergence).
     *   This prefix corresponds to the methods described in the [Max Measure (M)](#7-max-measure-m) section.
-    *   Files with this prefix typically calculate the error defined by the maximum difference over the path, specifically $\displaystyle \mathbb{E} \left[ \max_{i=1,\ldots,n} \|X_{t_{i,n}} - \bar{X}_{t_{i,n}}\|^2 \right]$.
+    *   Files with this prefix typically calculate the error defined by the maximum difference over the path, specifically 
+    $$
+    \mathbb{E} \left[ \max_{i=1,\ldots,n} \|X_{t_{i,n}} - \bar{X}^\theta_{t_{i,n}}\|^2 \right]}
+    $$
 
 *   **`_check` suffix** (e.g., `LTM1_check`):
     *   Represents **self-verification** of a function or scheme.  
@@ -547,12 +550,37 @@ $w_1, w_2 \sim N(0, t)$ are independent
 
 $$
 \begin{aligned}
-\overline{X}^{0.5}(x, t, w) &= x + \begin{pmatrix} a_1(x) \\ a_2(x) \end{pmatrix} t + \begin{pmatrix} s(x_2)w_1 \\ s(x_1)w_2 \end{pmatrix}, \\
-\overline{X}^{1.0}(x, t, w) &= x + \begin{pmatrix} a_1(x) \\ a_2(x) \end{pmatrix} t + \begin{pmatrix} s(x_2)w_1 \\ s(x_1)w_2 \end{pmatrix} + \frac{1}{2} \begin{pmatrix} s'(x_2)s(x_1)w_1w_2 \\ s'(x_1)s(x_2)w_1w_2 \end{pmatrix}, \\
-\overline{X}^{x, 1.5}(x, t, w) &= x + \begin{pmatrix} a_1(x) \\ a_2(x) \end{pmatrix} t + \begin{pmatrix} s(x_2)w_1 \\ s(x_1)w_2 \end{pmatrix} + \frac{1}{2} \begin{pmatrix} s'(x_2)s(x_1)w_1w_2 \\ s'(x_1)s(x_2)w_1w_2 \end{pmatrix} \\
-&\quad + \frac{t}{2} \begin{pmatrix} \partial_1 a_1(x)s(x_2)w_1 + \partial_2 a_1(x)s(x_1)w_2 + s'(x_2)a_2(x)w_1 \\ \partial_1 a_2(x)s(x_2)w_1 + \partial_2 a_2(x)s(x_1)w_2 + s'(x_1)a_1(x)w_2 \end{pmatrix} \\
-&\quad + \frac{t}{8} \begin{pmatrix} 2s''(x_2)s(x_1)^2w_1 + \frac{[s'(x_2)s(x_1)]^2}{s(x_2)}w_1 - s'(x_1)s'(x_2)s(x_2)w_2 \\ 2s''(x_1)s(x_2)^2w_1 + \frac{[s'(x_1)s(x_2)]^2}{s(x_1)}w_1 - s'(x_1)s(x_1)s'(x_2)w_1 \end{pmatrix} \\
-&\quad + \begin{pmatrix} \frac{1}{24}\frac{(s'(x_2))^2}{s(x_2)}s(x_1)^2w_t^{111} + \frac{1}{12}s'(x_1)s'(x_2)s(x_2)w_t^{112} + \frac{1}{6}s''(x_2)s(x_1)^2w_t^{122} + \frac{1}{24}\frac{(s'(x_2))^2}{s(x_2)}s(x_1)^2w_t^{122} \\ \frac{1}{24}\frac{(s'(x_1))^2}{s(x_1)}s(x_2)^2w_t^{222} + \frac{1}{12}s'(x_1)s'(x_2)s(x_1)w_t^{122} + \frac{1}{6}s''(x_1)s(x_2)^2w_t^{112} + \frac{1}{24}\frac{(s'(x_1))^2}{s(x_1)}s(x_2)^2w_t^{112} \end{pmatrix},
+\Delta_t^{2}(x,y)
+&= \frac{t^{2}}{2} \partial_{1}a_{1}(x)s^2(x_{2}) H_t^{11}(x,y)+ \frac{t^{2}}{2} \partial_{2}a_{1}(x)s^2(x_{1}) H_t^{12}(x,y) \\
+&\quad + \frac{t^{2}}{2} \partial_{1}a_{2}(x)s^2(x_{2}) H_t^{12}(x,y)+ \frac{t^{2}}{2} \partial_{2}a_{2}(x)s^2(x_{1}) H_t^{22}(x,y)
+\end{aligned}
+$$
+$$
+\begin{aligned}
+&\quad + \frac{t^{2}}{4} s^2(x_{2})s'(x_{2})a_{2}(x) H_t^{11}(x,y)+ \frac{t^{2}}{4} s^2(x_{1})s'(x_{1})a_{1}(x) H_t^{22}(x,y) \\
+&\quad + \frac{t^{2}}{4} s''(x_{2})s(x_{2})s(x_{1})^{2} H_t^{11}(x,y)+ \frac{t^{2}}{4} s''(x_{1})s(x_{1})s(x_{2})^{2} H_t^{22}(x,y)
+\end{aligned}
+$$
+$$
+\begin{aligned}
+&\quad + \frac{t^{2}}{8} [s'(x_{2})s(x_{1})]^{2} H_t^{11}(x,y)+ \frac{t^{2}}{8} [s'(x_{1})s(x_{2})]^{2} H_t^{22}(x,y) \\
+&\quad - \frac{t^{2}}{4} s'(x_{1})s(x_{1})s'(x_{2})s(x_{2}) H_t^{12}(x,y)
+\end{aligned}
+$$
+$$
+\begin{aligned}
+&\quad + \frac{t^{3}}{24} (s'(x_{2}))^{2}s(x_{1})^{2}s(x_{2})^{2} H_t^{1111}(x,y)+ \frac{t^{3}}{24} (s'(x_{1}))^{2}s(x_{1})^{2}s(x_{2})^{2} H_t^{2222}(x,y)
+\end{aligned}
+$$
+$$
+\begin{aligned}
+&\quad + \frac{t^{3}}{12} s'(x_{1})s'(x_{2})s(x_{1})s(x_{2})^{3} H_t^{1112}(x,y)+ \frac{t^{3}}{12} s'(x_{1})s'(x_{2})s(x_{1})^{3}s(x_{2}) H_t^{1222}(x,y)
+\end{aligned}
+$$
+$$
+\begin{aligned}
+&\quad + \frac{t^{3}}{6} s''(x_{1})s(x_{1})s(x_{2})^{4} H_t^{1122}(x,y)+ \frac{t^{3}}{6} s''(x_{2})s(x_{2})s(x_{1})^{4} H_t^{1122}(x,y) \\
+&\quad + \frac{t^{3}}{24} (s'(x_{2}))^{2}s(x_{1})^{4} H_t^{1122}(x,y)+ \frac{t^{3}}{24} (s'(x_{1}))^{2}s(x_{2})^{4} H_t^{1122}(x,y)
 \end{aligned}
 $$
 where
