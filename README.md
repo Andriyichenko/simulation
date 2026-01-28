@@ -411,8 +411,32 @@ $$
 \right] H_t^{1122}(x,y).
 \end{aligned}
 $$ -->
+$$
+\begin{aligned}
+\Delta_t^{2}(x,y)
+&= \frac{t^{2}}{2} \partial_{1}a_{1}(x)s^2(x_{2}) H_t^{11}(x,y)
++ \frac{t^{2}}{2} \partial_{2}a_{1}(x)s^2(x_{1}) H_t^{12}(x,y) \\
+&\quad + \frac{t^{2}}{2} \partial_{1}a_{2}(x)s^2(x_{2}) H_t^{12}(x,y)
++ \frac{t^{2}}{2} \partial_{2}a_{2}(x)s^2(x_{1}) H_t^{22}(x,y) \\
+&\quad + \frac{t^{2}}{4} s^2(x_{2})s'(x_{2})a_{2}(x) H_t^{11}(x,y)
++ \frac{t^{2}}{4} s^2(x_{1})s'(x_{1})a_{1}(x) H_t^{22}(x,y) \\
+&\quad + \frac{t^{2}}{4} s''(x_{2})s(x_{2})s(x_{1})^{2} H_t^{11}(x,y)
++ \frac{t^{2}}{4} s''(x_{1})s(x_{1})s(x_{2})^{2} H_t^{22}(x,y) \\
+&\quad + \frac{t^{2}}{8} [s'(x_{2})s(x_{1})]^{2} H_t^{11}(x,y)
++ \frac{t^{2}}{8} [s'(x_{1})s(x_{2})]^{2} H_t^{22}(x,y) \\
+&\quad - \frac{t^{2}}{4} s'(x_{1})s(x_{1})s'(x_{2})s(x_{2}) H_t^{12}(x,y) \\
+&\quad + \frac{t^{3}}{24} (s'(x_{2}))^{2}s(x_{1})^{2}s(x_{2})^{2} H_t^{1111}(x,y)
++ \frac{t^{3}}{24} (s'(x_{1}))^{2}s(x_{1})^{2}s(x_{2})^{2} H_t^{2222}(x,y) \\
+&\quad + \frac{t^{3}}{12} s'(x_{1})s'(x_{2})s(x_{1})s(x_{2})^{3} H_t^{1112}(x,y)
++ \frac{t^{3}}{12} s'(x_{1})s'(x_{2})s(x_{1})^{3}s(x_{2}) H_t^{1222}(x,y) \\
+&\quad + \frac{t^{3}}{6} s''(x_{1})s(x_{1})s(x_{2})^{4} H_t^{1122}(x,y)
++ \frac{t^{3}}{6} s''(x_{2})s(x_{2})s(x_{1})^{4} H_t^{1122}(x,y) \\
+&\quad + \frac{t^{3}}{24} (s'(x_{2}))^{2}s(x_{1})^{4} H_t^{1122}(x,y)
++ \frac{t^{3}}{24} (s'(x_{1}))^{2}s(x_{2})^{4} H_t^{1122}(x,y)
+\end{aligned}
+$$
 
-![Delta_t^2(x,y) formula](https://latex.codecogs.com/svg.image?\begin{aligned}\Delta_t^{2}(x,y)&=\frac{t^{2}}{2}\,\partial_{1}a_{1}(x)s^2(x_{2})\,H_t^{11}(x,y)+\frac{t^{2}}{2}\,\partial_{2}a_{1}(x)s^2(x_{1})\,H_t^{12}(x,y)\\&\quad+\frac{t^{2}}{2}\,\partial_{1}a_{2}(x)s^2(x_{2})\,H_t^{12}(x,y)+\frac{t^{2}}{2}\,\partial_{2}a_{2}(x)s^2(x_{1})\,H_t^{22}(x,y)\\&\quad+\frac{t^{2}}{4}\,s^2(x_{2})s'(x_{2})a_{2}(x)\,H_t^{11}(x,y)+\frac{t^{2}}{4}\,s^2(x_{1})s'(x_{1})a_{1}(x)\,H_t^{22}(x,y)\\&\quad+\frac{t^{2}}{4}\,s''(x_{2})s(x_{2})s(x_{1})^{2}\,H_t^{11}(x,y)+\frac{t^{2}}{4}\,s''(x_{1})s(x_{1})s(x_{2})^{2}\,H_t^{22}(x,y)\\&\quad+\frac{t^{2}}{8}\,[s'(x_{2})s(x_{1})]^{2}\,H_t^{11}(x,y)+\frac{t^{2}}{8}\,[s'(x_{1})s(x_{2})]^{2}\,H_t^{22}(x,y)\\&\quad-\frac{t^{2}}{4}\,s'(x_{1})s(x_{1})s'(x_{2})s(x_{2})\,H_t^{12}(x,y)\\&\quad+\frac{t^{3}}{24}\,(s'(x_{2}))^{2}s(x_{1})^{2}s(x_{2})^{2}\,H_t^{1111}(x,y)+\frac{t^{3}}{24}\,(s'(x_{1}))^{2}s(x_{1})^{2}s(x_{2})^{2}\,H_t^{2222}(x,y)\\&\quad+\frac{t^{3}}{12}\,s'(x_{1})s'(x_{2})s(x_{1})s(x_{2})^{3}\,H_t^{1112}(x,y)+\frac{t^{3}}{12}\,s'(x_{1})s'(x_{2})s(x_{1})^{3}s(x_{2})\,H_t^{1222}(x,y)\\&\quad+\left[\frac{t^{3}}{6}\,s''(x_{1})s(x_{1})s(x_{2})^{4}+\frac{t^{3}}{6}\,s''(x_{2})s(x_{2})s(x_{1})^{4}\right.\\&\quad\quad\left.+\frac{t^{3}}{24}\,(s'(x_{2}))^{2}s(x_{1})^{4}+\frac{t^{3}}{24}\,(s'(x_{1}))^{2}s(x_{2})^{4}\right]H_t^{1122}(x,y).\end{aligned})
+
 
 *   **Simulation Plot:** [D2S_plot](./D2S/D2S_plot.ipynb), [2DD2S_plot](./2D/2D_plot.ipynb)
 *   **Simulation Code:** [D2S](./D2S/), [2DD2S](./2D/)
