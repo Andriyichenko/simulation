@@ -1,5 +1,4 @@
-// 2DD1SM3.cpp
-//Error simulation for 2DD1SM3 scheme
+// 2DD2SM3_check.cpp
 
 #include <Eigen/Dense>
 #include <algorithm>  
@@ -211,8 +210,8 @@ inline double Delta2(const State& x, const State& y, double t) {
     double dds_x2 = dds_func(x(1));
 
     // a(x) = [x2, -x1]
-    double a1 = x(1);
-    double a2 = -x(0);
+    double a1 = x(0);
+    double a2 = x(1);
     
     // Derivatives of drift: 
     // ∂1 a1 = 0, ∂2 a1 = 1
@@ -392,13 +391,15 @@ int main() {
     vector<double> A(max_n + 1, 0.0);
     vector<double> Am(max_n + 1, 0.0);
     vector<double> A_1_5(max_n + 1, 0.0);
+    vector<double> Anm(max_n + 1, 0.0);
     vector<double> E(max_n + 1, 0.0);
     vector<double> Em(max_n + 1, 0.0);
     vector<double> E_1_5(max_n + 1, 0.0);
+    vector<double> Enm(max_n + 1, 0.0);
 
     const string dir_path = "../data_source";
     system(("mkdir -p " + dir_path).c_str()); 
-    const string csv_path = dir_path + "/2DD1SM3_100_1000_data.csv"; 
+    const string csv_path = dir_path + "/2DD2SM3_check_100_1000_data.csv"; 
     ofstream ofs(csv_path, ios::out | ios::trunc);
     
     if (!ofs) {
@@ -407,7 +408,7 @@ int main() {
     }
     
     ofs.imbue(locale::classic());
-    ofs << "n,points,E,Em,E_1.5,A,Am,A_1.5\n";
+    ofs << "n,points,E,Em,E_1.5,Enm,A,Am,A_1.5,Anm\n";
 
     for (int n = 0; n <= max_n; ++n) {
         const int points = 100 + 100 * n; 
@@ -418,11 +419,11 @@ int main() {
         const double sqrt_dtm = sqrt(dtm);
         const double sqrt_dt = sqrt(dt);
 
-        double S = 0.0, Sm = 0.0, S_1_5 = 0.0;
-        double B = 0.0, Bm = 0.0, B_1_5 = 0.0;
+        double S = 0.0, Sm = 0.0, S_1_5 = 0.0, Snm = 0.0;
+        double B = 0.0, Bm = 0.0, B_1_5 = 0.0, Bnm = 0.0;
 
 
-        #pragma omp parallel reduction(+:S,Sm,S_1_5,B,Bm,B_1_5) 
+        #pragma omp parallel reduction(+:S,Sm,S_1_5,B,Bm,B_1_5,Bnm,Snm) 
         {
             mt19937 rng_nm(40);
             mt19937 rng1_nm(50);
@@ -437,13 +438,12 @@ int main() {
                 State st_15  = x0_state;
                 State st_nm  = x0_state;
 
-                double D_A0  = 0.0, D_A1  = 0.0, D_A2  = 0.0,D_A0_sq  = 0.0, D_A1_sq  = 0.0, D_A2_sq  = 0.0, D_nm = 0.0, D_nm_sq = 0.0;
+                double D_A0  = 0.0, D_A1  = 0.0, D_A2  = 0.0, D_nm = 0.0;
                 double sum_A0 = 0.0, sum_A1 = 0.0, sum_A2 = 0.0,sum_nm = 0.0;
                 
                 for (int idx = 1; idx < points; ++idx) {
                     double Z1 = 0.0;
                     double Z2 = 0.0;
-                    State nm_benchmark;
 
                     //slide benchmark formula of D4 (Slide Milstein formula)
                     for (int m = 0; m < points; ++m){
@@ -451,9 +451,8 @@ int main() {
                         double Z1_nm = dist(rng_nm);
                         double Z2_nm = dist(rng1_nm);
                         State nm_benchmark = A1(st_nm, dtm, Z1_nm, Z2_nm);
-                        double delta_nm = Delta1(st_nm, nm_benchmark, dtm);
+                        double delta_nm = Delta2(st_nm, nm_benchmark, dtm);
                         D_nm += delta_nm;
-                        D_nm_sq += delta_nm * delta_nm;
                         st_nm = nm_benchmark;
                         Z1 += Z1_nm / sqrt(points);
                         Z2 += Z2_nm / sqrt(points);
@@ -464,30 +463,29 @@ int main() {
                     State next_mil = A1(st_mil, dt, Z1, Z2);
                     State next_15  = A2(st_15, dt, Z1, Z2);
 
-                    D_A0  += Delta1(st_em, next_em, dt);
-                    D_A1 += Delta1(st_mil, next_mil, dt);
-                    D_A2  += Delta1(st_15, next_15, dt);
-
-                    D_A0_sq  += Delta1(st_em, next_em, dt) * Delta1(st_em, next_em, dt);
-                    D_A1_sq += Delta1(st_mil, next_mil, dt) * Delta1(st_mil, next_mil, dt);
-                    D_A2_sq  += Delta1(st_15, next_15, dt) * Delta1(st_15, next_15, dt);
+                    D_A0  += Delta2(st_em, next_em, dt);
+                    D_A1 += Delta2(st_mil, next_mil, dt);
+                    D_A2  += Delta2(st_15, next_15, dt);
 
                     st_em  = next_em;
                     st_mil = next_mil;
                     st_15  = next_15;
                 }
                 
-                sum_A0 = compute_sum_state(D_A0, D_A0_sq);
-                sum_A1 = compute_sum_state(D_A1, D_A1_sq);
-                sum_A2 = compute_sum_state(D_A2, D_A2_sq);
-                sum_nm = compute_sum_state(D_nm, D_nm_sq);
+                sum_A0 = D_A0;
+                sum_A1 = D_A1;
+                sum_A2 = D_A2;
+                sum_nm = D_nm;
 
-                S += sgn(sum_A0) - sgn(sum_nm);
-                Sm += sgn(sum_A1) - sgn(sum_nm);
-                S_1_5 += sgn(sum_A2) - sgn(sum_nm);
-                B += (sgn(sum_A0) - sgn(sum_nm)) * (sgn(sum_A0) - sgn(sum_nm));
-                Bm += (sgn(sum_A1) - sgn(sum_nm)) * (sgn(sum_A1) - sgn(sum_nm));
-                B_1_5 += (sgn(sum_A2) - sgn(sum_nm)) * (sgn(sum_A2) - sgn(sum_nm));
+                S += sgn(sum_A0) / sqrt(dt);
+                Sm += sgn(sum_A1) / sqrt(dt);
+                S_1_5 += sgn(sum_A2) / sqrt(dt);
+                Snm += sgn(sum_nm) / sqrt(dtm);
+
+                B += sgn(sum_A0) * sgn(sum_A0) / dt;
+                Bm += sgn(sum_A1) * sgn(sum_A1) / dt;
+                B_1_5 += sgn(sum_A2) * sgn(sum_A2) / dt;
+                Bnm += sgn(sum_nm) * sgn(sum_nm) / dtm;
 
             }
        } // End of parallel region
@@ -496,10 +494,12 @@ int main() {
         A[n] = S * inv_paths;
         Am[n] = Sm * inv_paths;
         A_1_5[n] = S_1_5 * inv_paths;
+        Anm[n] = Snm * inv_paths;
         
         E[n] = B * inv_paths - A[n] * A[n];
         Em[n] = Bm * inv_paths - Am[n] * Am[n];
         E_1_5[n] = B_1_5 * inv_paths - A_1_5[n] * A_1_5[n];
+        Enm[n] = Bnm * inv_paths - Anm[n] * Anm[n];
 
         cout << "-------------------------------------------------" << n << "\n";      
         cout << setprecision(10) << "points = " << points << "\n";       
@@ -507,13 +507,15 @@ int main() {
         cout << setprecision(15) << "Var EM      = " << E[n] << "\n";         
         cout << setprecision(15) << "Var Milstein = " << Em[n] << "\n";         
         cout << setprecision(15) << "Var 1.5     = " << E_1_5[n] << "\n";      
+        cout << setprecision(15) << "Var benchmark     = " << Enm[n] << "\n";
         cout << setprecision(15) << "Mean EM     = " << A[n] << "\n";          
         cout << setprecision(15) << "Mean Milstein = " << Am[n] << "\n";         
         cout << setprecision(15) << "Mean 1.5    = " << A_1_5[n] << "\n";      
+        cout << setprecision(15) << "Mean benchmark    = " << Anm[n] << "\n";      
         ofs << n << "," << points << ","  
             << fixed << setprecision(10) 
-            << E[n] << "," << Em[n] << "," << E_1_5[n] << "," 
-            << A[n] << "," << Am[n] << "," << A_1_5[n] << endl;
+            << E[n] << "," << Em[n] << "," << E_1_5[n] << "," << Enm[n] << "," 
+            << A[n] << "," << Am[n] << "," << A_1_5[n] << "," << Anm[n] << endl;
     }
 
     ofs.close();

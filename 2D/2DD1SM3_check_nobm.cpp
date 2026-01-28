@@ -1,5 +1,4 @@
-// 2DD1SM3.cpp
-//Error simulation for 2DD1SM3 scheme
+// 2DD1SM3_check_nobm.cpp
 
 #include <Eigen/Dense>
 #include <algorithm>  
@@ -386,7 +385,7 @@ int main() {
     constexpr double mu = 0.0;
     constexpr double sigma = 1.0;
     
-    const State x0_state = Vector2d(1, 1); //X_start
+    const State x0_state = Vector2d(1, 1);
     constexpr int max_n = 9;
 
     vector<double> A(max_n + 1, 0.0);
@@ -398,7 +397,7 @@ int main() {
 
     const string dir_path = "../data_source";
     system(("mkdir -p " + dir_path).c_str()); 
-    const string csv_path = dir_path + "/2DD1SM3_100_1000_data.csv"; 
+    const string csv_path = dir_path + "/2DD1SM3_check_nobm_100_1000_data.csv"; 
     ofstream ofs(csv_path, ios::out | ios::trunc);
     
     if (!ofs) {
@@ -414,8 +413,6 @@ int main() {
         const int paths = 10 * points * points;
         
         const double dt = (t_end - t_start) / (points - 1);
-        const double dtm = dt / (points - 1);
-        const double sqrt_dtm = sqrt(dtm);
         const double sqrt_dt = sqrt(dt);
 
         double S = 0.0, Sm = 0.0, S_1_5 = 0.0;
@@ -424,41 +421,22 @@ int main() {
 
         #pragma omp parallel reduction(+:S,Sm,S_1_5,B,Bm,B_1_5) 
         {
-            mt19937 rng_nm(40);
-            mt19937 rng1_nm(50);
-
+            mt19937 rng(42); 
+            mt19937 rng1(30);
             normal_distribution<double> dist(mu, sigma);
          
             #pragma omp for schedule(static) nowait
             for (int p = 0; p < paths; ++p) {
-
                 State st_em  = x0_state;
                 State st_mil = x0_state;
                 State st_15  = x0_state;
-                State st_nm  = x0_state;
-
-                double D_A0  = 0.0, D_A1  = 0.0, D_A2  = 0.0,D_A0_sq  = 0.0, D_A1_sq  = 0.0, D_A2_sq  = 0.0, D_nm = 0.0, D_nm_sq = 0.0;
-                double sum_A0 = 0.0, sum_A1 = 0.0, sum_A2 = 0.0,sum_nm = 0.0;
+                
+                double D_A0  = 0.0, D_A1  = 0.0, D_A2  = 0.0,D_A0_sq  = 0.0, D_A1_sq  = 0.0, D_A2_sq  = 0.0;
+                double sum_A0 = 0.0, sum_A1 = 0.0, sum_A2 = 0.0;
                 
                 for (int idx = 1; idx < points; ++idx) {
-                    double Z1 = 0.0;
-                    double Z2 = 0.0;
-                    State nm_benchmark;
-
-                    //slide benchmark formula of D4 (Slide Milstein formula)
-                    for (int m = 0; m < points; ++m){
-
-                        double Z1_nm = dist(rng_nm);
-                        double Z2_nm = dist(rng1_nm);
-                        State nm_benchmark = A1(st_nm, dtm, Z1_nm, Z2_nm);
-                        double delta_nm = Delta1(st_nm, nm_benchmark, dtm);
-                        D_nm += delta_nm;
-                        D_nm_sq += delta_nm * delta_nm;
-                        st_nm = nm_benchmark;
-                        Z1 += Z1_nm / sqrt(points);
-                        Z2 += Z2_nm / sqrt(points);
-                        
-                    }
+                    double Z1 = dist(rng);
+                    double Z2 = dist(rng1);
                     
                     State next_em  = A0(st_em, dt, Z1, Z2);
                     State next_mil = A1(st_mil, dt, Z1, Z2);
@@ -471,24 +449,33 @@ int main() {
                     D_A0_sq  += Delta1(st_em, next_em, dt) * Delta1(st_em, next_em, dt);
                     D_A1_sq += Delta1(st_mil, next_mil, dt) * Delta1(st_mil, next_mil, dt);
                     D_A2_sq  += Delta1(st_15, next_15, dt) * Delta1(st_15, next_15, dt);
+                    
+
 
                     st_em  = next_em;
                     st_mil = next_mil;
                     st_15  = next_15;
+                    // cout << "Path " << p << " Step(idx) " << idx << "\n";
+                    // cout << "next_em = [" << next_em(0) << ", " << next_em(1) << "]\n";
+                    // cout << "next_mil = [" << next_mil(0) << ", " << next_mil(1) << "]\n";
+                    // cout << "next_15 = [" << next_15(0) << ", " << next_15(1) << "]\n";
+                    // cout << "D_A0 = " << D_A0 << ", D_A1 = " << D_A1 << ", D_A2 = " << D_A2 << "\n";
                 }
                 
                 sum_A0 = compute_sum_state(D_A0, D_A0_sq);
                 sum_A1 = compute_sum_state(D_A1, D_A1_sq);
                 sum_A2 = compute_sum_state(D_A2, D_A2_sq);
-                sum_nm = compute_sum_state(D_nm, D_nm_sq);
 
-                S += sgn(sum_A0) - sgn(sum_nm);
-                Sm += sgn(sum_A1) - sgn(sum_nm);
-                S_1_5 += sgn(sum_A2) - sgn(sum_nm);
-                B += (sgn(sum_A0) - sgn(sum_nm)) * (sgn(sum_A0) - sgn(sum_nm));
-                Bm += (sgn(sum_A1) - sgn(sum_nm)) * (sgn(sum_A1) - sgn(sum_nm));
-                B_1_5 += (sgn(sum_A2) - sgn(sum_nm)) * (sgn(sum_A2) - sgn(sum_nm));
+                S += sgn(sum_A0);
+                Sm += sgn(sum_A1);
+                S_1_5 += sgn(sum_A2);
+                B += sgn(sum_A0) * sgn(sum_A0);
+                Bm += sgn(sum_A1) * sgn(sum_A1);
+                B_1_5 += sgn(sum_A2) * sgn(sum_A2);
 
+                // cout << "Path " << p << " Step(paths) " << paths << "\n";
+                // cout << "sum_A0 = " << sum_A0 << ", sum_A1 = " << sum_A1 << ", sum_A2 = " << sum_A2 << "\n";
+                // cout << "S = " << S << ", Sm = " << Sm << ", S_1_5 = " << S_1_5 << "\n";
             }
        } // End of parallel region
 
@@ -504,12 +491,13 @@ int main() {
         cout << "-------------------------------------------------" << n << "\n";      
         cout << setprecision(10) << "points = " << points << "\n";       
         cout << "-------------------------------------------------" <<  "\n";      
-        cout << setprecision(15) << "Var EM      = " << E[n] << "\n";         
-        cout << setprecision(15) << "Var Milstein = " << Em[n] << "\n";         
-        cout << setprecision(15) << "Var 1.5     = " << E_1_5[n] << "\n";      
-        cout << setprecision(15) << "Mean EM     = " << A[n] << "\n";          
-        cout << setprecision(15) << "Mean Milstein = " << Am[n] << "\n";         
-        cout << setprecision(15) << "Mean 1.5    = " << A_1_5[n] << "\n";      
+        cout << setprecision(18) << "Var EM      = " << E[n] << "\n";         
+        cout << setprecision(18) << "Var Milstein = " << Em[n] << "\n";         
+        cout << setprecision(18) << "Var 1.5     = " << E_1_5[n] << "\n";      
+        cout << setprecision(18) << "Mean EM     = " << A[n] << "\n";          
+        cout << setprecision(18) << "Mean Milstein = " << Am[n] << "\n";         
+        cout << setprecision(18) << "Mean 1.5    = " << A_1_5[n] << "\n";      
+
         ofs << n << "," << points << ","  
             << fixed << setprecision(10) 
             << E[n] << "," << Em[n] << "," << E_1_5[n] << "," 

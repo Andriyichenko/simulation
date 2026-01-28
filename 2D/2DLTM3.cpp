@@ -1,8 +1,5 @@
-//2DLT
-// 問題：
-// 1.dtは実数ですか
-// 2.z_const実数ですか
-// 3.L関数の出力は実数ですか
+//2DLTM3
+//Error
 
 #include <Eigen/Dense>
 #include <algorithm>  
@@ -188,7 +185,7 @@ inline State A2(const State& curr, double dt, double Z1, double Z2) {
 
 int main() {  
 
-    double z_const = 1.38;//z_const = 1.38 \approx 1.4
+    double z_const = 1.38;// z_const = sin(T) + cos(T) 
     constexpr double alpha = 1.0;
     constexpr double t_start = 0.0;
     constexpr double t_end = 1.0;
@@ -197,8 +194,9 @@ int main() {
     
     // Initial State x_0 = (1, 1) from D.2
     const State x0_state = Vector2d(1.0, 1.0);
-    
     constexpr int max_n = 9;
+    
+
 
     // 配列の初期化
     vector<double> A(max_n + 1, 0.0);
@@ -211,7 +209,7 @@ int main() {
     // CSV ファイル名の設定
     const string dir_path = "../data_source";
     system(("mkdir -p " + dir_path).c_str()); 
-    const string csv_path = dir_path + "/2DLT_100_1000_data.csv"; 
+    const string csv_path = dir_path + "/2DLTM3_100_1000_data.csv"; 
     ofstream ofs(csv_path, ios::out | ios::trunc);
     
     if (!ofs) {
@@ -226,14 +224,16 @@ int main() {
     for (int n = 0; n <= max_n; ++n) {
         const int points = 100 + 100 * n; 
         const int paths = 10 * points * points;
-        
         const double dt = (t_end - t_start) / (points - 1);
+        const double dtm = dt / (points - 1);
         const double sqrt_dt = sqrt(dt);
 
         // パラメータ初期化
         double S     = 0.0;
         double Sm    = 0.0; 
         double S_1_5 = 0.0;
+        double Sb    = 0.0;
+        double Bnm   = 0.0;
         double B     = 0.0;
         double Bm    = 0.0;
         double B_1_5 = 0.0;
@@ -241,8 +241,10 @@ int main() {
         // OpenMP threadの並列化
         #pragma omp parallel reduction(+:S,Sm,S_1_5,B,Bm,B_1_5) 
         {
-            mt19937 rng(42); 
-            mt19937 rng1(30);
+            mt19937 rng_nm(30); 
+            mt19937 rng1_nm(42);
+
+           
             normal_distribution<double> dist(mu, sigma);
          
             #pragma omp for schedule(static) nowait
@@ -251,16 +253,30 @@ int main() {
                 State st_em  = x0_state;
                 State st_mil = x0_state;
                 State st_15  = x0_state;
+                State st_nm  = x0_state;
                 
                 // Accumulators for Local Time (L) of the *first component* X1
                 double L_em  = 0.0;
                 double L_mil = 0.0;
                 double L_15  = 0.0;
+                double L_nm  = 0.0;
                 
                 for (int idx = 1; idx < points; ++idx) {
                     // Random numbers
-                    double Z1 = dist(rng);
-                    double Z2 = dist(rng1);
+                    double Z1 = 0.0;
+                    double Z2 = 0.0;
+
+                    //slide benchmark fomula of D4 (Slide Milstein)
+                    for (int m = 0; m < points; ++m){
+
+                        double Z1_nm = dist(rng_nm);
+                        double Z2_nm = dist(rng1_nm);
+                        State nm_benchmark = A1(st_nm, dtm, Z1_nm, Z2_nm);
+                        st_nm = nm_benchmark;
+                        Z1 += Z1_nm / sqrt(points);
+                        Z2 += Z2_nm / sqrt(points);
+                        
+                    }
                     
                     // 1. Update States
                     State next_em  = A0(st_em, dt, Z1, Z2);
@@ -271,6 +287,7 @@ int main() {
                     L_em  += dt * phi_n(z_const, alpha, next_em(0), dt);
                     L_mil += dt * phi_n(z_const, alpha, next_mil(0), dt);
                     L_15  += dt * phi_n(z_const, alpha, next_15(0), dt);
+                    L_nm += dt * phi_n(z_const, alpha, st_nm(0), dt);
 
                     // 3. Move forward
                     st_em  = next_em;
@@ -282,16 +299,18 @@ int main() {
                 double val_em  = f(L_em);
                 double val_mil = f(L_mil);
                 double val_15  = f(L_15);
+                double val_nm  = f(L_nm);
+                
 
                 // Expectation Accumulation
-                S += val_em;
-                Sm += val_mil;
-                S_1_5 += val_15;
+                S += val_em - val_nm;
+                Sm += val_mil - val_nm;
+                S_1_5 += val_15 - val_nm;
 
                 // Variance Accumulation
-                B += val_em * val_em;
-                Bm += val_mil * val_mil;
-                B_1_5 += val_15 * val_15;
+                B += (val_em - val_nm) * (val_em - val_nm);
+                Bm += (val_mil - val_nm) * (val_mil - val_nm);
+                B_1_5 += (val_15 - val_nm) * (val_15 - val_nm);
             }
         }
 

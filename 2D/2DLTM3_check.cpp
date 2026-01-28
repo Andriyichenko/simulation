@@ -1,6 +1,4 @@
-//2DD4
-//st_nm = X_0_state
-//no nm = n
+//2DLTM3_check
 
 #include <Eigen/Dense>
 #include <algorithm>  
@@ -186,7 +184,7 @@ inline State A2(const State& curr, double dt, double Z1, double Z2) {
 
 int main() {  
 
-    double z_const = 1.38;//z_const = 1.38 \approx 1.4
+    double z_const = 1.38;// z_const = sin(T) + cos(T) 
     constexpr double alpha = 1.0;
     constexpr double t_start = 0.0;
     constexpr double t_end = 1.0;
@@ -195,7 +193,6 @@ int main() {
     
     // Initial State x_0 = (1, 1) from D.2
     const State x0_state = Vector2d(1.0, 1.0);
-    //const State x0_nm = Vector2d(0.0, 0.0);
     constexpr int max_n = 9;
     
 
@@ -204,14 +201,16 @@ int main() {
     vector<double> A(max_n + 1, 0.0);
     vector<double> Am(max_n + 1, 0.0);
     vector<double> A_1_5(max_n + 1, 0.0);
+    vector<double> Ab(max_n + 1, 0.0);
     vector<double> E(max_n + 1, 0.0);
     vector<double> Em(max_n + 1, 0.0);
     vector<double> E_1_5(max_n + 1, 0.0);
+    vector<double> Eb(max_n + 1, 0.0);
 
     // CSV ファイル名の設定
     const string dir_path = "../data_source";
     system(("mkdir -p " + dir_path).c_str()); 
-    const string csv_path = dir_path + "/2DD4_100_1000_data.csv"; 
+    const string csv_path = dir_path + "/2DLTM3_check_100_1000_data.csv"; 
     ofstream ofs(csv_path, ios::out | ios::trunc);
     
     if (!ofs) {
@@ -220,13 +219,12 @@ int main() {
     }
     
     ofs.imbue(locale::classic());
-    ofs << "n,points,E,Em,E_1.5,A,Am,A_1.5\n";
+    ofs << "n,points,E,Em,E_1.5,E_b,A,Am,A_1.5,A_b\n";
 
     // 時間ステップ数のループ
     for (int n = 0; n <= max_n; ++n) {
         const int points = 100 + 100 * n; 
-        const int paths = 10 * points * points;
-        //const double nm = n;
+        const int paths = 8 * points * points;
         const double dt = (t_end - t_start) / (points - 1);
         const double dtm = dt / (points - 1);
         const double sqrt_dt = sqrt(dt);
@@ -236,16 +234,14 @@ int main() {
         double Sm    = 0.0; 
         double S_1_5 = 0.0;
         double Sb    = 0.0;
-        double Bnm   = 0.0;
+        double Bb    = 0.0;
         double B     = 0.0;
         double Bm    = 0.0;
         double B_1_5 = 0.0;
 
         // OpenMP threadの並列化
-        #pragma omp parallel reduction(+:S,Sm,S_1_5,B,Bm,B_1_5) 
+        #pragma omp parallel reduction(+:S,Sm,S_1_5,Sb,B,Bm,B_1_5,Bb) 
         {
-            // mt19937 rng(42); 
-            // mt19937 rng1(30);
             mt19937 rng_nm(30); 
             mt19937 rng1_nm(42);
 
@@ -268,19 +264,19 @@ int main() {
                 
                 for (int idx = 1; idx < points; ++idx) {
                     // Random numbers
-                    // double Z1 = dist(rng);
-                    // double Z2 = dist(rng1);
-                    double Z1 = 0.0;
+                    double Z1 = 0.0;    
                     double Z2 = 0.0;
-                    double Z1_nm = dist(rng_nm);
-                    double Z2_nm = dist(rng1_nm);
+           
 
                     //slide benchmark fomula of D4 (Slide Milstein)
                     for (int m = 0; m < points; ++m){
+
+                        double Z1_nm = dist(rng_nm);
+                        double Z2_nm = dist(rng1_nm);
                         State nm_benchmark = A1(st_nm, dtm, Z1_nm, Z2_nm);
                         st_nm = nm_benchmark;
-                        Z1 += Z1_nm;
-                        Z2 += Z2_nm;
+                        Z1 += Z1_nm / sqrt(points);
+                        Z2 += Z2_nm / sqrt(points);
                         
                     }
                     
@@ -293,12 +289,27 @@ int main() {
                     L_em  += dt * phi_n(z_const, alpha, next_em(0), dt);
                     L_mil += dt * phi_n(z_const, alpha, next_mil(0), dt);
                     L_15  += dt * phi_n(z_const, alpha, next_15(0), dt);
-                    L_nm += dt * phi_n(z_const, alpha, st_nm(0), dt);
+                    L_nm  += dt * phi_n(z_const, alpha, st_nm(0), dt);
 
                     // 3. Move forward
                     st_em  = next_em;
                     st_mil = next_mil;
                     st_15  = next_15;
+
+                    // cout << "-------------------------------------------------" << n << "\n";  
+                    // cout << "next_em = " << next_em.transpose() << "\n" ;
+                    // cout << "next_mil = " << next_mil.transpose() << "\n" ;
+                    // cout << "next_15 = " << next_15.transpose() << "\n" ;
+                    // cout << "nm = " << st_nm.transpose() << "\n";
+                    // cout << "L_em = " << L_em << "\n" ;
+                    // cout << "L_mil = " << L_mil << "\n" ;
+                    // cout << "L_15 = " << L_15 << "\n" ;
+                    // cout << "L_nm = " << L_nm << "\n" ;
+                    // cout << "dt = " << dt << "\n" ;
+                    // cout << "dtm = " << dtm << "\n" ;
+                    // cout << "Z1 = " << Z1 << "\n" ;
+                    // cout << "Z2 = " << Z2 << "\n" ;
+                    // cout << "idx = " << idx << "\n" ;
                 }
 
                 // Apply Test Functional f(L) = arctan(L)
@@ -309,44 +320,47 @@ int main() {
                 
 
                 // Expectation Accumulation
-                S += val_em - val_nm;
-                Sm += val_mil - val_nm;
-                S_1_5 += val_15 - val_nm;
+                S += val_em ;
+                Sm += val_mil ;
+                S_1_5 += val_15 ;
+                Sb += val_nm;
 
                 // Variance Accumulation
-                B += (val_em - val_nm) * (val_em - val_nm);
-                Bm += (val_mil - val_nm) * (val_mil - val_nm);
-                B_1_5 += (val_15 - val_nm) * (val_15 - val_nm);
+                B += (val_em ) * (val_em );
+                Bm += (val_mil ) * (val_mil );
+                B_1_5 += (val_15 ) * (val_15 );
+                Bb += (val_nm ) * (val_nm );
             }
-        }
+         }
 
         // 期待値の計算
         const double inv_paths = 1.0 / paths;
         A[n] = S * inv_paths;
         Am[n] = Sm * inv_paths;
         A_1_5[n] = S_1_5 * inv_paths;
-        
+        Ab[n] = Sb * inv_paths;
         // 分散の計算
         E[n] = B * inv_paths - A[n] * A[n];
         Em[n] = Bm * inv_paths - Am[n] * Am[n];
         E_1_5[n] = B_1_5 * inv_paths - A_1_5[n] * A_1_5[n];
-
+        Eb[n] = Bb * inv_paths - Ab[n] * Ab[n];
         // 出力
         cout << "-------------------------------------------------" << n << "\n";      
         cout << setprecision(10) << "points = " << points << "\n";       
         cout << "-------------------------------------------------" <<  "\n";      
-        cout << setprecision(10) << "Var EM      = " << E[n] << "\n";         
-        cout << setprecision(10) << "Var Milstein= " << Em[n] << "\n";         
-        cout << setprecision(10) << "Var 1.5     = " << E_1_5[n] << "\n";      
-        cout << setprecision(10) << "Mean EM     = " << A[n] << "\n";          
-        cout << setprecision(10) << "Mean Mil    = " << Am[n] << "\n";         
-        cout << setprecision(10) << "Mean 1.5    = " << A_1_5[n] << "\n";      
-
+        cout << setprecision(15) << "Var EM      = " << E[n] << "\n";         
+        cout << setprecision(15) << "Var Milstein= " << Em[n] << "\n";         
+        cout << setprecision(15) << "Var 1.5     = " << E_1_5[n] << "\n";  
+        cout << setprecision(15) << "Var benchmark    = " << Eb[n] << "\n";    
+        cout << setprecision(15) << "Mean EM     = " << A[n] << "\n";          
+        cout << setprecision(15) << "Mean Mil    = " << Am[n] << "\n";         
+        cout << setprecision(15) << "Mean 1.5    = " << A_1_5[n] << "\n";      
+        cout << setprecision(15) << "Mean benchmark    = " << Ab[n] << "\n";      
         // CSVファイルに書き込み
         ofs << n << "," << points << ","  
-            << fixed << setprecision(10) 
-            << E[n] << "," << Em[n] << "," << E_1_5[n] << "," 
-            << A[n] << "," << Am[n] << "," << A_1_5[n] << endl;
+            << fixed << setprecision(15)
+            << E[n] << "," << Em[n] << "," << E_1_5[n] << "," << Eb[n] << "," 
+            << A[n] << "," << Am[n] << "," << A_1_5[n] << "," << Ab[n] << endl;
     }
 
     ofs.close();

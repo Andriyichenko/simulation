@@ -1,4 +1,5 @@
-//2DD4_check
+//2DLTM3_check_nobm
+
 
 #include <Eigen/Dense>
 #include <algorithm>  
@@ -193,25 +194,21 @@ int main() {
     
     // Initial State x_0 = (1, 1) from D.2
     const State x0_state = Vector2d(1.0, 1.0);
-    //const State x0_nm = Vector2d(0.0, 0.0);
-    constexpr int max_n = 9;
     
-
+    constexpr int max_n = 9;
 
     // 配列の初期化
     vector<double> A(max_n + 1, 0.0);
     vector<double> Am(max_n + 1, 0.0);
     vector<double> A_1_5(max_n + 1, 0.0);
-    vector<double> Ab(max_n + 1, 0.0);
     vector<double> E(max_n + 1, 0.0);
     vector<double> Em(max_n + 1, 0.0);
     vector<double> E_1_5(max_n + 1, 0.0);
-    vector<double> Eb(max_n + 1, 0.0);
 
     // CSV ファイル名の設定
     const string dir_path = "../data_source";
     system(("mkdir -p " + dir_path).c_str()); 
-    const string csv_path = dir_path + "/2DD4_check_100_1000_data.csv"; 
+    const string csv_path = dir_path + "/2DLTM3_check_nobm_100_1000_data.csv"; 
     ofstream ofs(csv_path, ios::out | ios::trunc);
     
     if (!ofs) {
@@ -220,36 +217,29 @@ int main() {
     }
     
     ofs.imbue(locale::classic());
-    ofs << "n,points,E,Em,E_1.5,E_b,A,Am,A_1.5,A_b\n";
+    ofs << "n,points,E,Em,E_1.5,A,Am,A_1.5\n";
 
     // 時間ステップ数のループ
     for (int n = 0; n <= max_n; ++n) {
         const int points = 100 + 100 * n; 
         const int paths = 10 * points * points;
-        //const double nm = n;
+        
         const double dt = (t_end - t_start) / (points - 1);
-        const double dtm = dt / (points - 1);
         const double sqrt_dt = sqrt(dt);
 
         // パラメータ初期化
         double S     = 0.0;
         double Sm    = 0.0; 
         double S_1_5 = 0.0;
-        double Sb    = 0.0;
-        double Bb    = 0.0;
         double B     = 0.0;
         double Bm    = 0.0;
         double B_1_5 = 0.0;
 
         // OpenMP threadの並列化
-        #pragma omp parallel reduction(+:S,Sm,S_1_5,Sb,B,Bm,B_1_5,Bb) 
+        #pragma omp parallel reduction(+:S,Sm,S_1_5,B,Bm,B_1_5) 
         {
-            // mt19937 rng(42); 
-            // mt19937 rng1(30);
-            mt19937 rng_nm(30); 
-            mt19937 rng1_nm(42);
-
-           
+            mt19937 rng(42); 
+            mt19937 rng1(30);
             normal_distribution<double> dist(mu, sigma);
          
             #pragma omp for schedule(static) nowait
@@ -258,31 +248,16 @@ int main() {
                 State st_em  = x0_state;
                 State st_mil = x0_state;
                 State st_15  = x0_state;
-                State st_nm  = x0_state;
                 
                 // Accumulators for Local Time (L) of the *first component* X1
                 double L_em  = 0.0;
                 double L_mil = 0.0;
                 double L_15  = 0.0;
-                double L_nm  = 0.0;
                 
                 for (int idx = 1; idx < points; ++idx) {
                     // Random numbers
-                    // double Z1 = dist(rng);
-                    // double Z2 = dist(rng1);
-                    double Z1 = 0.0;
-                    double Z2 = 0.0;
-                    double Z1_nm = dist(rng_nm);
-                    double Z2_nm = dist(rng1_nm);
-
-                    //slide benchmark fomula of D4 (Slide Milstein)
-                    for (int m = 0; m < points; ++m){
-                        State nm_benchmark = A1(st_nm, dtm, Z1_nm, Z2_nm);
-                        st_nm = nm_benchmark;
-                        Z1 += Z1_nm;
-                        Z2 += Z2_nm;
-                        
-                    }
+                    double Z1 = dist(rng);
+                    double Z2 = dist(rng1);
                     
                     // 1. Update States
                     State next_em  = A0(st_em, dt, Z1, Z2);
@@ -293,7 +268,6 @@ int main() {
                     L_em  += dt * phi_n(z_const, alpha, next_em(0), dt);
                     L_mil += dt * phi_n(z_const, alpha, next_mil(0), dt);
                     L_15  += dt * phi_n(z_const, alpha, next_15(0), dt);
-                    L_nm += dt * phi_n(z_const, alpha, st_nm(0), dt);
 
                     // 3. Move forward
                     st_em  = next_em;
@@ -305,20 +279,16 @@ int main() {
                 double val_em  = f(L_em);
                 double val_mil = f(L_mil);
                 double val_15  = f(L_15);
-                double val_nm  = f(L_nm);
-                
 
                 // Expectation Accumulation
-                S += val_em ;
-                Sm += val_mil ;
-                S_1_5 += val_15 ;
-                Sb += val_nm;
+                S += val_em;
+                Sm += val_mil;
+                S_1_5 += val_15;
 
                 // Variance Accumulation
-                B += (val_em ) * (val_em );
-                Bm += (val_mil ) * (val_mil );
-                B_1_5 += (val_15 ) * (val_15 );
-                Bb += (val_nm ) * (val_nm );
+                B += val_em * val_em;
+                Bm += val_mil * val_mil;
+                B_1_5 += val_15 * val_15;
             }
         }
 
@@ -327,29 +297,28 @@ int main() {
         A[n] = S * inv_paths;
         Am[n] = Sm * inv_paths;
         A_1_5[n] = S_1_5 * inv_paths;
-        Ab[n] = Sb * inv_paths;
+        
         // 分散の計算
         E[n] = B * inv_paths - A[n] * A[n];
         Em[n] = Bm * inv_paths - Am[n] * Am[n];
         E_1_5[n] = B_1_5 * inv_paths - A_1_5[n] * A_1_5[n];
-        Eb[n] = Bb * inv_paths - Ab[n] * Ab[n];
+
         // 出力
         cout << "-------------------------------------------------" << n << "\n";      
         cout << setprecision(10) << "points = " << points << "\n";       
         cout << "-------------------------------------------------" <<  "\n";      
-        cout << setprecision(15) << "Var EM      = " << E[n] << "\n";         
-        cout << setprecision(15) << "Var Milstein= " << Em[n] << "\n";         
-        cout << setprecision(15) << "Var 1.5     = " << E_1_5[n] << "\n";  
-        cout << setprecision(15) << "Var benchmark    = " << Eb[n] << "\n";    
-        cout << setprecision(15) << "Mean EM     = " << A[n] << "\n";          
-        cout << setprecision(15) << "Mean Mil    = " << Am[n] << "\n";         
-        cout << setprecision(15) << "Mean 1.5    = " << A_1_5[n] << "\n";      
-        cout << setprecision(15) << "Mean benchmark    = " << Ab[n] << "\n";      
+        cout << setprecision(10) << "Var EM      = " << E[n] << "\n";         
+        cout << setprecision(10) << "Var Milstein= " << Em[n] << "\n";         
+        cout << setprecision(10) << "Var 1.5     = " << E_1_5[n] << "\n";      
+        cout << setprecision(10) << "Mean EM     = " << A[n] << "\n";          
+        cout << setprecision(10) << "Mean Mil    = " << Am[n] << "\n";         
+        cout << setprecision(10) << "Mean 1.5    = " << A_1_5[n] << "\n";      
+
         // CSVファイルに書き込み
         ofs << n << "," << points << ","  
-            << fixed << setprecision(15)
-            << E[n] << "," << Em[n] << "," << E_1_5[n] << "," << Eb[n] << "," 
-            << A[n] << "," << Am[n] << "," << A_1_5[n] << "," << Ab[n] << endl;
+            << fixed << setprecision(10) 
+            << E[n] << "," << Em[n] << "," << E_1_5[n] << "," 
+            << A[n] << "," << Am[n] << "," << A_1_5[n] << endl;
     }
 
     ofs.close();

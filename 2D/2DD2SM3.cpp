@@ -1,4 +1,5 @@
-// 2DD2SM3.cpp
+// 2DD2SM3
+//Error simulation for 2DD2SM3 scheme
 
 #include <Eigen/Dense>
 #include <algorithm>  
@@ -28,6 +29,11 @@ constexpr int sgn(double x) {
     return (x > 0) - (x < 0);
 }
 
+inline double f_sgn(double x, double min_val = -100.0, double max_val = 0.0) {
+    return max(min_val, min(x, max_val));
+}
+
+
 // Compute sum involving delta value
 inline double compute_sum_state(double delta_val,double delta_val_sq) {
     return delta_val - 0.5 * delta_val_sq;  
@@ -48,12 +54,34 @@ inline double f(double L) {
     return atan(L);
 }
 
-// s(x) = 2 + sin(x)
-inline double s_func(double x) { return 2.0 + sin(x); }
-// s'(x) = cos(x)
-inline double ds_func(double x) { return cos(x); }
-// s''(x) = -sin(x)
-inline double dds_func(double x) { return -sin(x); }
+// Clipping function
+inline double f_clip(double x) {
+    double min_val = -1.0, max_val = 4.0;
+    return min(max_val, max(x, min_val));
+}
+
+
+
+
+// s(x) = 2 + min(max(-1, x), 4)
+inline double s_func(double x) { return 2.0 + f_clip(x); }
+// s'(x) = 1 if -1 <= x <= 4 else 0
+inline double ds_func(double x) {
+    if (x >= -1.0 && x <= 4.0) {
+        return 1.0;
+    } else {
+        return 0.0;
+    }
+}
+
+// inline double s_func(double x) { return 1.0; }
+//inline double ds_func(double x) { return 0.0; }
+
+
+
+// s''(x) = 0
+inline double dds_func(double x) { return 0.0; }
+
 
 // ========================================
 // Hermite Polynomials Helper Functions
@@ -144,9 +172,11 @@ inline double Delta1(const State& x, const State& y, double t) {
     double ds_x1 = ds_func(x(0));
     double ds_x2 = ds_func(x(1));
 
-    // a(x) = [x2, -x1]
-    double a1 = x(1);
-    double a2 = -x(0);
+    //a(x) = [x2, -x1]
+    double a1 = x(0);
+    double a2 = x(1);
+    // double a1 = 0.0;
+    // double a2 = 0.0;
 
     // r = y - x - a(x)t
     double r1 = y(0) - x(0) - a1 * t;
@@ -181,9 +211,10 @@ inline double Delta2(const State& x, const State& y, double t) {
     double dds_x2 = dds_func(x(1));
 
     // a(x) = [x2, -x1]
-    double a1 = x(1);
-    double a2 = -x(0);
+    double a1 = x(0);
+    double a2 = x(1);
     
+
     // Derivatives of drift: 
     // ∂1 a1 = 0, ∂2 a1 = 1
     // ∂1 a2 = -1, ∂2 a2 = 0
@@ -344,6 +375,7 @@ inline State A2(const State& curr, double dt, double Z1, double Z2) {
 }
 
 
+
 // ========================================
 // Main Program
 // ========================================
@@ -355,15 +387,17 @@ int main() {
     constexpr double mu = 0.0;
     constexpr double sigma = 1.0;
     
-    const State x0_state = Vector2d(1.0, 1.0);
+    const State x0_state = Vector2d(1, 1); //X_start
     constexpr int max_n = 9;
 
     vector<double> A(max_n + 1, 0.0);
     vector<double> Am(max_n + 1, 0.0);
     vector<double> A_1_5(max_n + 1, 0.0);
+    vector<double> Anm(max_n + 1, 0.0);
     vector<double> E(max_n + 1, 0.0);
     vector<double> Em(max_n + 1, 0.0);
     vector<double> E_1_5(max_n + 1, 0.0);
+    vector<double> Enm(max_n + 1, 0.0);
 
     const string dir_path = "../data_source";
     system(("mkdir -p " + dir_path).c_str()); 
@@ -383,30 +417,49 @@ int main() {
         const int paths = 10 * points * points;
         
         const double dt = (t_end - t_start) / (points - 1);
+        const double dtm = dt / (points - 1);
+        const double sqrt_dtm = sqrt(dtm);
         const double sqrt_dt = sqrt(dt);
 
-        double S = 0.0, Sm = 0.0, S_1_5 = 0.0;
-        double B = 0.0, Bm = 0.0, B_1_5 = 0.0;
+        double S = 0.0, Sm = 0.0, S_1_5 = 0.0, Snm = 0.0;
+        double B = 0.0, Bm = 0.0, B_1_5 = 0.0, Bnm = 0.0;
 
 
         #pragma omp parallel reduction(+:S,Sm,S_1_5,B,Bm,B_1_5) 
         {
-            mt19937 rng(42); 
-            mt19937 rng1(30);
+            mt19937 rng_nm(40);
+            mt19937 rng1_nm(50);
+
             normal_distribution<double> dist(mu, sigma);
          
             #pragma omp for schedule(static) nowait
             for (int p = 0; p < paths; ++p) {
+
                 State st_em  = x0_state;
                 State st_mil = x0_state;
                 State st_15  = x0_state;
-                
-                double D_A0  = 0.0, D_A1  = 0.0, D_A2  = 0.0;
-                double sum_A0 = 0.0, sum_A1 = 0.0, sum_A2 = 0.0;
+                State st_nm  = x0_state;
+
+                double D_A0  = 0.0, D_A1  = 0.0, D_A2  = 0.0, D_nm = 0.0;
+                double sum_A0 = 0.0, sum_A1 = 0.0, sum_A2 = 0.0,sum_nm = 0.0;
                 
                 for (int idx = 1; idx < points; ++idx) {
-                    double Z1 = dist(rng);
-                    double Z2 = dist(rng1);
+                    double Z1 = 0.0;
+                    double Z2 = 0.0;
+
+                    //slide benchmark formula of D4 (Slide Milstein formula)
+                    for (int m = 0; m < points; ++m){
+
+                        double Z1_nm = dist(rng_nm);
+                        double Z2_nm = dist(rng1_nm);
+                        State nm_benchmark = A1(st_nm, dtm, Z1_nm, Z2_nm);
+                        double delta_nm = Delta2(st_nm, nm_benchmark, dtm);
+                        D_nm += delta_nm;
+                        st_nm = nm_benchmark;
+                        Z1 += Z1_nm / sqrt(points);
+                        Z2 += Z2_nm / sqrt(points);
+                        
+                    }
                     
                     State next_em  = A0(st_em, dt, Z1, Z2);
                     State next_mil = A1(st_mil, dt, Z1, Z2);
@@ -419,27 +472,21 @@ int main() {
                     st_em  = next_em;
                     st_mil = next_mil;
                     st_15  = next_15;
-                    // cout << "Path " << p << " Step(idx) " << idx << "\n";
-                    // cout << "next_em = [" << next_em(0) << ", " << next_em(1) << "]\n";
-                    // cout << "next_mil = [" << next_mil(0) << ", " << next_mil(1) << "]\n";
-                    // cout << "next_15 = [" << next_15(0) << ", " << next_15(1) << "]\n";
-                    // cout << "D_A0 = " << D_A0 << ", D_A1 = " << D_A1 << ", D_A2 = " << D_A2 << "\n";
                 }
                 
                 sum_A0 = D_A0;
                 sum_A1 = D_A1;
                 sum_A2 = D_A2;
+                sum_nm = D_nm;
 
-                S += sgn(sum_A0) / sqrt(dt);
-                Sm += sgn(sum_A1) / sqrt(dt);
-                S_1_5 += sgn(sum_A2) / sqrt(dt);
-                B += sgn(sum_A0) * sgn(sum_A0) / dt;
-                Bm += sgn(sum_A1) * sgn(sum_A1) /dt;
-                B_1_5 += sgn(sum_A2) * sgn(sum_A2) /dt;
+                S += (sgn(sum_A0) - sgn(sum_nm)) / sqrt(dt);
+                Sm += (sgn(sum_A1) - sgn(sum_nm)) / sqrt(dt);
+                S_1_5 += (sgn(sum_A2) - sgn(sum_nm)) / sqrt(dt);
+                
+                B += (sgn(sum_A0) - sgn(sum_nm)) * (sgn(sum_A0) - sgn(sum_nm)) / dt;
+                Bm += (sgn(sum_A1) - sgn(sum_nm)) * (sgn(sum_A1) - sgn(sum_nm)) / dt;
+                B_1_5 += (sgn(sum_A2) - sgn(sum_nm)) * (sgn(sum_A2) - sgn(sum_nm)) / dt;
 
-                // cout << "Path " << p << " Step(paths) " << paths << "\n";
-                // cout << "sum_A0 = " << sum_A0 << ", sum_A1 = " << sum_A1 << ", sum_A2 = " << sum_A2 << "\n";
-                // cout << "S = " << S << ", Sm = " << Sm << ", S_1_5 = " << S_1_5 << "\n";
             }
        } // End of parallel region
 
@@ -455,15 +502,14 @@ int main() {
         cout << "-------------------------------------------------" << n << "\n";      
         cout << setprecision(10) << "points = " << points << "\n";       
         cout << "-------------------------------------------------" <<  "\n";      
-        cout << setprecision(10) << "Var EM      = " << E[n] << "\n";         
-        cout << setprecision(10) << "Var Milstein = " << Em[n] << "\n";         
-        cout << setprecision(10) << "Var 1.5     = " << E_1_5[n] << "\n";      
-        cout << setprecision(10) << "Mean EM     = " << A[n] << "\n";          
-        cout << setprecision(10) << "Mean Milstein = " << Am[n] << "\n";         
-        cout << setprecision(10) << "Mean 1.5    = " << A_1_5[n] << "\n";      
-
+        cout << setprecision(15) << "Var EM      = " << E[n] << "\n";         
+        cout << setprecision(15) << "Var Milstein = " << Em[n] << "\n";         
+        cout << setprecision(15) << "Var 1.5     = " << E_1_5[n] << "\n";      
+        cout << setprecision(15) << "Mean EM     = " << A[n] << "\n";          
+        cout << setprecision(15) << "Mean Milstein = " << Am[n] << "\n";         
+        cout << setprecision(15) << "Mean 1.5    = " << A_1_5[n] << "\n";      
         ofs << n << "," << points << ","  
-            << fixed << setprecision(18) 
+            << fixed << setprecision(10) 
             << E[n] << "," << Em[n] << "," << E_1_5[n] << "," 
             << A[n] << "," << Am[n] << "," << A_1_5[n] << endl;
     }

@@ -1,5 +1,5 @@
-// LTM1 with x_0=1, T=1, z=0.5, a=0.5, b=0.5,alpha=1
-// E[F(\bar{X})] - E[F(\bar{X}^\alpha)]
+// LTM1_EFF with x_0=1, T=1, z=0.5, a=0.5, b=0.5,alpha=1
+// E[F(\bar{X}) - F(\bar{X}^\alpha)]
 #include <algorithm>  
 #include <cmath>       
 #include <fstream>     
@@ -159,11 +159,6 @@ int main() {
     constexpr double b_quad = b_sq * b_sq;
     constexpr double x_0 = 1.0;
     constexpr int max_n = 9;
-
-    //1000th point for benchmark
-    constexpr int points_check = 1000;
-    const double dt_check = (t_end - t_start) / (points_check - 1);
-    const double sqrt_dt_check = sqrt(dt_check);
     
 
 
@@ -182,7 +177,7 @@ int main() {
     // CSV ファイル名の設定
     const string dir_path = "../data_source";
     system(("mkdir -p " + dir_path).c_str()); //フォルダーの確認 
-    const string csv_path = dir_path + "/LTM1_100_1000_data.csv"; //data sourceのファイル名指定
+    const string csv_path = dir_path + "/LTM1_EFF_100_1000_data.csv"; //data sourceのファイル名指定
     ofstream ofs(csv_path, ios::out | ios::trunc);
     
     if (!ofs) {
@@ -204,7 +199,7 @@ int main() {
 
 
         // パラメータ初期化
-        double S = 0.0, Sm = 0.0, S_1_5 = 0.0, Sb = 0.0,S_check=0.0,Sm_check=0.0,S_1_5_check=0.0;
+        double S = 0.0, Sm = 0.0, S_1_5 = 0.0, Sb = 0.0;
         double B = 0.0, Bm = 0.0, B_1_5 = 0.0, Bb = 0.0;
 
         // OpenMP threadの並列化
@@ -222,17 +217,6 @@ int main() {
                 double W_state = x_0, W_state1 = x_0, W_state2 = x_0;
                 double X_b = x_0,X_b_Y=x_0,W_state_Y=x_0,W_state1_Y=x_0,W_state2_Y=x_0;
                 double L_x0 = 0.0, L_xb = 0.0, L_x1 = 0.0, L_x2 = 0.0;
-
-                for (int k = 1; k < points_check; ++k) {
-                    const double Z_benchmark = dist(rng1); // Independence
-                    X_b_Y = benchmark(X_b, dt_check, Z_benchmark, b, a);
-                    L_xb += dt_check * phi_n(z_const, alpha, X_b_Y, dt_check);
-                    X_b = X_b_Y;
-                }
-                
-                double val_b = f(L_xb);
-                Sb += val_b;
-                Bb += val_b * val_b;
 
                 for (int idx = 1; idx < points; ++idx) {
                     // ランダム数の生成
@@ -252,7 +236,11 @@ int main() {
                     W_state1_Y = A1(W_state1, coef_m, dt, Z);
                     W_state2_Y = A2(W_state2, coef_1_5, dt,Z);
 
+                    //Benchmarkの更新
+                    X_b_Y = benchmark(X_b, dt,Z, b, a);
+
                     // 誤差の累計
+                    L_xb += dt * phi_n(z_const, alpha, X_b_Y, dt);
                     L_x0 += dt * phi_n(z_const, alpha, W_state_Y, dt);
                     L_x1 += dt * phi_n(z_const, alpha, W_state1_Y, dt);
                     L_x2 += dt * phi_n(z_const, alpha, W_state2_Y, dt);
@@ -261,23 +249,20 @@ int main() {
                     W_state1 = W_state1_Y;
                     W_state2 = W_state2_Y;
                     W_state = W_state_Y;
+                    X_b = X_b_Y;
 
                 }
 
-                //LT_check
-                S_check += f(L_x0);
-                Sm_check += f(L_x1);
-                S_1_5_check += f(L_x2);
-
+ 
                 // LTのF関数の期待値の累計
-                S += val_b - f(L_x0);
-                Sm += val_b - f(L_x1);
-                S_1_5 += val_b - f(L_x2);
+                S += f(L_xb) - f(L_x0);
+                Sm += f(L_xb) - f(L_x1);
+                S_1_5 += f(L_xb) - f(L_x2);
 
                 // LTのF関数の分散用の累計
-                B += f(L_x0) * f(L_x0);
-                Bm += f(L_x1) * f(L_x1);
-                B_1_5 += f(L_x2) * f(L_x2);
+                B += (f(L_xb) - f(L_x0)) * (f(L_xb) - f(L_x0));
+                Bm += (f(L_xb) - f(L_x1)) * (f(L_xb) - f(L_x1));
+                B_1_5 += (f(L_xb) - f(L_x2)) * (f(L_xb) - f(L_x2));
             }
             
            
@@ -288,13 +273,13 @@ int main() {
         A[n] = S * inv_paths;
         Am[n] = Sm * inv_paths;
         A_1_5[n] = S_1_5 * inv_paths;
-        Ab[n] = Sb * inv_paths;   
+        Ab[n] = Sb * inv_paths;
         
         // 分散の計算
+        E[n] = B * inv_paths - A[n] * A[n];
+        Em[n] = Bm * inv_paths - Am[n] * Am[n];
+        E_1_5[n] = B_1_5 * inv_paths - A_1_5[n] * A_1_5[n];
         Eb[n] = Bb * inv_paths - Ab[n] * Ab[n];
-        E[n] = B * inv_paths - S_check * S_check * inv_paths * inv_paths + Eb[n];
-        Em[n] = Bm * inv_paths - Sm_check * Sm_check * inv_paths * inv_paths + Eb[n];
-        E_1_5[n] = B_1_5 * inv_paths - S_1_5_check * S_1_5_check * inv_paths * inv_paths + Eb[n];
 
         // 出力用
         cout << "-------------------------------------------------" << n << "\n";      

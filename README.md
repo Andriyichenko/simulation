@@ -23,7 +23,7 @@ Please refer to the page 58 ~66 of the paper [*High order polynomial regression 
     *   [5. D2S Series](#5-d2s-series)
     *   [6. Local Time (LT)](#6-local-time-lt)
     *   [7. Max Measure (M)](#7-max-measure-m)
-    *   [8. Model 1 & Model 2 (M1&M2)](#8-model-1--model-2-m1m2)
+    *   [8. Model 1 & Model 2 & Model 3(M1&M2&M3)](#8-model-1-model-2--model-3-m1-m2--m3)
 * **[Calculation](#calculation)**
 
 *   **[Development Environment](#development-environment)**
@@ -34,10 +34,15 @@ Please refer to the page 58 ~66 of the paper [*High order polynomial regression 
 ### C++ File Naming Convention
 The file naming convention used throughout this project is as follows:
 
-*   **`M1` / `M2` suffix** (e.g., `LTM1`, `D1fM2`):
+*   **`M1` / `M2`/ `M3` suffix** (e.g., `LTM1`, `D1fM2`,`2DD1SM3`):
     *   Indicates the specific **Model** used for simulation, as defined in the referenced paper.
-    *   `M1` corresponds to [*Model 1*](#8-model-1--model-2-m1m2).
-    *   `M2` corresponds to [*Model 2*](#8-model-1--model-2-m1m2).
+    *   `M1` corresponds to [*Model 1*](#model-1).
+    *   `M2` corresponds to [*Model 2*](#model-2).
+    *   `M3` corresponds to [*Model 3*](#model-3).
+
+*   **`_nobm` suffix** (e.g. `2DLTM3_nobm`):
+    *   Indicates that the simulation is performed **without using a benchmark solution** ($\widetilde{X^{\text{benchmark}}}$).
+    *   "bm" stands for benchmark. "nobm" means the exact solution or high-precision benchmark is not used/available for error calculation in this specific file.
 
 *   **`D1` / `D2` prefix** (e.g., `D1fM1`, `D2S`):
     *   Indicates that the simulation is based on the functions $D_1(n, X)$ / $D_2(n, X)$.
@@ -57,7 +62,7 @@ The file naming convention used throughout this project is as follows:
 
 *   **`M` prefix** (e.g., `MM1`, `MM2`):
     *   Indicates that the simulation focuses on the **Max Measure** (strong convergence).
-    *   This prefix corresponds to the methods described in the [Max Measure (M)](#7-max-measure-mm) section.
+    *   This prefix corresponds to the methods described in the [Max Measure (M)](#7-max-measure-m) section.
     *   Files with this prefix typically calculate the error defined by the maximum difference over the path, specifically $\mathbb{E} \left[ \max_{i=1,\ldots,n} \|X_{t_{i,n}} - \bar{X}_{t_{i,n}}\|^2 \right]$.
 
 *   **`_check` suffix** (e.g., `LTM1_check`):
@@ -68,6 +73,7 @@ The file naming convention used throughout this project is as follows:
 *   **No suffix** (e.g., `LTM1`):
     *   Represents the **Error** between schemes. 
     *   These files typically calculate the difference between two methods using a specific formula to analyze **Convergence** or **Error Rates**.
+    *   For Local Time simulations  `LTM1` and  `LTM2`, these files compute the error between the benchmark solution at the 1000th discretization point and the approximation scheme: $\mathbb{E}[F(\bar{X})] - \mathbb{E}[F(\bar{X}^\alpha)]$, where $\bar{X}$ is evaluated at $n=1000$ and $\bar{X}^\alpha$ represents the Euler, Milstein, or 1.5 order approximation.
 
 *   **`_limit` suffix** (e.g., `D1fM1_limit`):
     *   Represents the **direct calculation of the limit**. 
@@ -81,7 +87,10 @@ The file naming convention used throughout this project is as follows:
 *  **`_var` suffix** (e.g., `LTM1_check_var`):
    *  It indicates files simulated using specific values. `LTM1_check_var` corresponds to `LTM1_check ` with $x_0=1, T=1, z=0.5, a=-1, b=1,\alpha=1.5$. They are mainly used to generate variance plots
 
-
+*  **`_EFF` suffix** (e.g., `LTM1_EFF`):
+   *  Represents the **Expected Functional Difference** calculation.
+   *  These files compute $\mathbb{E}[F(\bar{X}) - F(\bar{X}^\alpha)]$, where $F$ is the test functional, $\bar{X}$ is the benchmark solution, and $\bar{X}^\alpha$ is the approximation scheme (Euler, Milstein, or 1.5 order).
+   *  Used to evaluate the weak convergence error between the exact solution and the approximation.
 
 ### Data Source Naming Convention
 The files in the `data_source/` directory follow a naming convention that links them to their generating C++ files and simulation parameters:
@@ -145,6 +154,7 @@ $$
 *   **Simulation Plot:** [2D_plot](./2D/2D_plot.ipynb)
 *   **Simulation Code:** [2D](./2D/)
 
+
 ### 2. D1f Series
 **Directory:** `D1f/`
 
@@ -188,7 +198,7 @@ $$
 *   **Simulation Code:** [D1f](./D1f/)
 
 ### 3. D1S Series (TV-distance Lower Bounds)
-**Directory:** `D1S/`
+**Directory:** `D1S/`, `2DD1S/`
 
 This module focuses on test functionals for the lower bounds of the Total Variation (TV) distance.
 It uses the sign function to define the functional:
@@ -231,8 +241,34 @@ $$
 I_T^0 = \int_0^T \sqrt{\frac{3}{2}} |\sigma'|(X(s)) dW_s^{(3)}.
 $$
 
-*   **Simulation Plot:** [D1S_plot](./D1S/D1S_plot.ipynb)
-*   **Simulation Code:** [D1S](./D1S/)
+#### 2D Case Extension
+
+In the 2-dimensional setting (Model 3), we extend the test functionals to:
+
+**Test Functionals:**
+
+$$
+F_n^{E}(\overline{X})
+=\textrm{sgn}\!\left(
+\sum_{k=1}^{n}\Delta^{1}\!\left(h_n,X_{t_{k-1}},X_{t_k}\right)
+-\frac{1}{2}\sum_{k=1}^{n}\left[\Delta^{1}\!\left(h_n,X_{t_{k-1}},X_{t_k}\right)\right]^2
+\right)\quad\cdots (\texttt{2DD1S})
+$$
+
+
+
+**Definition of $\Delta_t^1$ (2D):**
+
+$$
+\Delta_t^{1}(x,y)
+=\frac{1}{2} t^{2}s'(x_2)s(x_2)s^{2}(x_1)\,H_t^{112}(x,y)
++\frac{1}{2} t^{2}s'(x_1)s(x_1)s^{2}(x_2)\,H_t^{221}(x,y)
+$$
+
+
+
+*   **Simulation Plot:** [D1S_plot](./D1S/D1S_plot.ipynb), [2DD1S_plot](./2D/2D_plot.ipynb)
+*   **Simulation Code:** [D1S](./D1S/), [2DD1S](./2D/)
 
 ### 4. D2f Series
 **Directory:** `D2f/`
@@ -282,7 +318,7 @@ In the case of the sign function this becomes $\mathbb{E}[|I_T^1|]$.
 *   **Simulation Code:** [D2f](./D2f/)
 
 ### 5. D2S Series
-**Directory:** `D2S/`
+**Directory:** `D2S/`, `2DD2S/`
 
 Similar to D1S, this module defines test functionals for lower bounds of TV-distance but for higher-order terms.
 
@@ -334,8 +370,50 @@ $$
 
 It is used to analyze the Milstein scheme's approximation rates. 
 
-*   **Simulation Plot:** [D2S_plot](./D2S/D2S_plot.ipynb)
-*   **Simulation Code:** [D2S](./D2S/)
+#### 2D Case Extension
+
+In the 2-dimensional setting (Model 3), we extend the test functional for higher-order terms:
+
+**Test Functional:**
+
+$$
+F_n^{M}(\overline{X})
+=h_n^{-1/2}\textrm{sgn}\!\left(
+\sum_{k=1}^{n}\Delta^{2}\!\left(h_n,X_{t_{k-1}},X_{t_k}\right)
+\right)\quad\cdots (\texttt{2DD2S})
+$$
+
+**Definition of $\Delta_t^2$ (2D):**
+
+$$
+\begin{aligned}
+\Delta_t^{2}(x,y)
+&=\frac{t^{2}}{2}\,\partial_{1}a_{1}(x)s^2(x_{2})\,H_t^{11}(x,y)
++\frac{t^{2}}{2}\,\partial_{2}a_{1}(x)s^2(x_{1})\,H_t^{12}(x,y) \\
+&\quad+\frac{t^{2}}{2}\,\partial_{1}a_{2}(x)s^2(x_{2})\,H_t^{12}(x,y)
++\frac{t^{2}}{2}\,\partial_{2}a_{2}(x)s^2(x_{1})\,H_t^{22}(x,y) \\
+&\quad+\frac{t^{2}}{4}\,s^2(x_{2})s'(x_{2})a_{2}(x)\,H_t^{11}(x,y)
++\frac{t^{2}}{4}\,s^2(x_{1})s'(x_{1})a_{1}(x)\,H_t^{22}(x,y) \\
+&\quad+\frac{t^{2}}{4}\,s''(x_{2})s(x_{2})s(x_{1})^{2}\,H_t^{11}(x,y)
++\frac{t^{2}}{4}\,s''(x_{1})s(x_{1})s(x_{2})^{2}\,H_t^{22}(x,y) \\
+&\quad+\frac{t^{2}}{8}\,[s'(x_{2})s(x_{1})]^{2}\,H_t^{11}(x,y)
++\frac{t^{2}}{8}\,[s'(x_{1})s(x_{2})]^{2}\,H_t^{22}(x,y) \\
+&\quad-\frac{t^{2}}{4}\,s'(x_{1})s(x_{1})s'(x_{2})s(x_{2})\,H_t^{12}(x,y) \\
+&\quad+\frac{t^{3}}{24}\,(s'(x_{2}))^{2}s(x_{1})^{2}s(x_{2})^{2}\,H_t^{1111}(x,y)
++\frac{t^{3}}{24}\,(s'(x_{1}))^{2}s(x_{1})^{2}s(x_{2})^{2}\,H_t^{2222}(x,y) \\
+&\quad+\frac{t^{3}}{12}\,s'(x_{1})s'(x_{2})s(x_{1})s(x_{2})^{3}\,H_t^{1112}(x,y)
++\frac{t^{3}}{12}\,s'(x_{1})s'(x_{2})s(x_{1})^{3}s(x_{2})\,H_t^{1222}(x,y) \\
+&\quad+\left[
+\frac{t^{3}}{6}\,s''(x_{1})s(x_{1})s(x_{2})^{4}
++\frac{t^{3}}{6}\,s''(x_{2})s(x_{2})s(x_{1})^{4} \right. \\
+&\quad\quad\left. +\frac{t^{3}}{24}\,(s'(x_{2}))^{2}s(x_{1})^{4}
++\frac{t^{3}}{24}\,(s'(x_{1}))^{2}s(x_{2})^{4}
+\right] H_t^{1122}(x,y).
+\end{aligned}
+$$
+
+*   **Simulation Plot:** [D2S_plot](./D2S/D2S_plot.ipynb), [2DD2S_plot](./2D/2D_plot.ipynb)
+*   **Simulation Code:** [D2S](./D2S/), [2DD2S](./2D/)
 
 ### 6. Local Time (LT)
 **Directory:** `LT/`
@@ -372,8 +450,8 @@ $$
 *   **Simulation Plot:** [MM_plot](./Max/MM_plot.ipynb)
 *   **Simulation Code:** [Max](./Max/)
 
-### 8. Model 1 & Model 2 (M1&M2)
-**Directory:** `*M1/M2`
+### 8. Model 1, Model 2 & Model 3 (M1, M2 & M3)
+**Directory:** `*M1/M2/M3`
 
 #### Model 1
 
@@ -419,6 +497,45 @@ where,
 
 $$
 a(X)=a \sqrt{1 + X_t^2} \mathrm{asinh}(X_t) + \frac{b^2}{2} X_t\, ,\sigma(X) = b \sqrt{1 + X_t^2}
+$$
+
+#### Model 3
+
+*   **System Setup (Multivariate Case)**:
+
+In the multivariate case, we consider specific example
+
+$$
+\sigma(x) = \begin{pmatrix} s(x_2) & 0 \\ 0 & s(x_1) \end{pmatrix}, \quad b(x) = \begin{pmatrix} s^2(x_2) & 0 \\ 0 & s^2(x_1) \end{pmatrix}
+$$
+
+<!-- $\color{red}{\text{Explicit Definition of } a \text{ and } s}$ -->
+
+$$
+s(x) = 2 + \sin x, \quad a(x) = \begin{pmatrix} a_1(x) \\ a_2(x) \end{pmatrix} = \begin{pmatrix} x_2 \\ -x_1 \end{pmatrix}, \quad x_{start} = \begin{pmatrix} 1 \\ 1 \end{pmatrix}, \quad T = 1
+$$
+*   **Simulation schemes**:
+
+
+$w_1, w_2 \sim N(0, t)$ are independent
+
+$$
+\begin{aligned}
+\overline{X}^{0.5}(x, t, w) &= x + \begin{pmatrix} a_1(x) \\ a_2(x) \end{pmatrix} t + \begin{pmatrix} s(x_2)w_1 \\ s(x_1)w_2 \end{pmatrix}, \\
+\overline{X}^{1.0}(x, t, w) &= x + \begin{pmatrix} a_1(x) \\ a_2(x) \end{pmatrix} t + \begin{pmatrix} s(x_2)w_1 \\ s(x_1)w_2 \end{pmatrix} + \frac{1}{2} \begin{pmatrix} s'(x_2)s(x_1)w_1w_2 \\ s'(x_1)s(x_2)w_1w_2 \end{pmatrix}, \\
+\overline{X}^{x, 1.5}(x, t, w) &= x + \begin{pmatrix} a_1(x) \\ a_2(x) \end{pmatrix} t + \begin{pmatrix} s(x_2)w_1 \\ s(x_1)w_2 \end{pmatrix} + \frac{1}{2} \begin{pmatrix} s'(x_2)s(x_1)w_1w_2 \\ s'(x_1)s(x_2)w_1w_2 \end{pmatrix} \\
+&\quad + \frac{t}{2} \begin{pmatrix} \partial_1 a_1(x)s(x_2)w_1 + \partial_2 a_1(x)s(x_1)w_2 + s'(x_2)a_2(x)w_1 \\ \partial_1 a_2(x)s(x_2)w_1 + \partial_2 a_2(x)s(x_1)w_2 + s'(x_1)a_1(x)w_2 \end{pmatrix} \\
+&\quad + \frac{t}{8} \begin{pmatrix} 2s''(x_2)s(x_1)^2w_1 + \frac{[s'(x_2)s(x_1)]^2}{s(x_2)}w_1 - s'(x_1)s'(x_2)s(x_2)w_2 \\ 2s''(x_1)s(x_2)^2w_1 + \frac{[s'(x_1)s(x_2)]^2}{s(x_1)}w_1 - s'(x_1)s(x_1)s'(x_2)w_1 \end{pmatrix} \\
+&\quad + \begin{pmatrix} \frac{1}{24}\frac{(s'(x_2))^2}{s(x_2)}s(x_1)^2w_t^{111} + \frac{1}{12}s'(x_1)s'(x_2)s(x_2)w_t^{112} + \frac{1}{6}s''(x_2)s(x_1)^2w_t^{122} + \frac{1}{24}\frac{(s'(x_2))^2}{s(x_2)}s(x_1)^2w_t^{122} \\ \frac{1}{24}\frac{(s'(x_1))^2}{s(x_1)}s(x_2)^2w_t^{222} + \frac{1}{12}s'(x_1)s'(x_2)s(x_1)w_t^{122} + \frac{1}{6}s''(x_1)s(x_2)^2w_t^{112} + \frac{1}{24}\frac{(s'(x_1))^2}{s(x_1)}s(x_2)^2w_t^{112} \end{pmatrix},
+\end{aligned}
+$$
+where
+
+$$
+w_t^{111} = (w_1)^3 - 3tw_1,\quad
+w_t^{222} = (w_2)^3 - 3tw_2,\quad
+w_t^{112} = \big((w_1)^2 - t\big)w_2,\quad
+w_t^{122} = \big((w_2)^2 - t\big)w_1
 $$
 
 Please refer to the page 59 ~ 61 of the [*paper*](https://www.overleaf.com/project/6801f9a43ca0501e11926ee2)
