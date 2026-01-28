@@ -544,8 +544,6 @@ $$
 
 
 $w_1, w_2 \sim N(0, t)$ are independent
-Where,
-
 $$
 \begin{aligned}
 \Delta_t^{2}(x,y)
@@ -581,6 +579,7 @@ $$
 &\quad + \frac{t^{3}}{24} (s'(x_{2}))^{2}s(x_{1})^{4} H_t^{1122}(x,y)+ \frac{t^{3}}{24} (s'(x_{1}))^{2}s(x_{2})^{4} H_t^{1122}(x,y)
 \end{aligned}
 $$
+
 where
 
 $$
