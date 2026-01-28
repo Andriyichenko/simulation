@@ -41,7 +41,7 @@ The file naming convention used throughout this project is as follows:
     *   `M3` corresponds to [*Model 3*](#model-3).
 
 *   **`_nobm` suffix** (e.g. `2DLTM3_nobm`):
-    *   Indicates that the simulation is performed **without using a benchmark solution** ($\widetilde{X^{\text{benchmark}}}$).
+    *   Indicates that the simulation is performed **without using a benchmark solution** ($\widetilde{X}^{\text{benchmark}}$).
     *   "bm" stands for benchmark. "nobm" means the exact solution or high-precision benchmark is not used/available for error calculation in this specific file.
 
 *   **`D1` / `D2` prefix** (e.g., `D1fM1`, `D2S`):
@@ -63,7 +63,7 @@ The file naming convention used throughout this project is as follows:
 *   **`M` prefix** (e.g., `MM1`, `MM2`):
     *   Indicates that the simulation focuses on the **Max Measure** (strong convergence).
     *   This prefix corresponds to the methods described in the [Max Measure (M)](#7-max-measure-m) section.
-    *   Files with this prefix typically calculate the error defined by the maximum difference over the path, specifically $\mathbb{E} \left[ \max_{i=1,\ldots,n} \|X_{t_{i,n}} - \bar{X}_{t_{i,n}}\|^2 \right]$.
+    *   Files with this prefix typically calculate the error defined by the maximum difference over the path, specifically $\displaystyle \mathbb{E} \left[ \max_{i=1,\ldots,n} \|X_{t_{i,n}} - \bar{X}_{t_{i,n}}\|^2 \right]$.
 
 *   **`_check` suffix** (e.g., `LTM1_check`):
     *   Represents **self-verification** of a function or scheme.  
@@ -385,7 +385,7 @@ $$
 
 **Definition of $\Delta_t^2$ (2D):**
 
-$$
+<!-- $$
 \begin{aligned}
 \Delta_t^{2}(x,y)
 &=\frac{t^{2}}{2}\,\partial_{1}a_{1}(x)s^2(x_{2})\,H_t^{11}(x,y)
@@ -410,7 +410,9 @@ $$
 +\frac{t^{3}}{24}\,(s'(x_{1}))^{2}s(x_{2})^{4}
 \right] H_t^{1122}(x,y).
 \end{aligned}
-$$
+$$ -->
+
+![Delta_t^2(x,y) formula](https://latex.codecogs.com/svg.image?\begin{aligned}\Delta_t^{2}(x,y)&=\frac{t^{2}}{2}\,\partial_{1}a_{1}(x)s^2(x_{2})\,H_t^{11}(x,y)+\frac{t^{2}}{2}\,\partial_{2}a_{1}(x)s^2(x_{1})\,H_t^{12}(x,y)\\&\quad+\frac{t^{2}}{2}\,\partial_{1}a_{2}(x)s^2(x_{2})\,H_t^{12}(x,y)+\frac{t^{2}}{2}\,\partial_{2}a_{2}(x)s^2(x_{1})\,H_t^{22}(x,y)\\&\quad+\frac{t^{2}}{4}\,s^2(x_{2})s'(x_{2})a_{2}(x)\,H_t^{11}(x,y)+\frac{t^{2}}{4}\,s^2(x_{1})s'(x_{1})a_{1}(x)\,H_t^{22}(x,y)\\&\quad+\frac{t^{2}}{4}\,s''(x_{2})s(x_{2})s(x_{1})^{2}\,H_t^{11}(x,y)+\frac{t^{2}}{4}\,s''(x_{1})s(x_{1})s(x_{2})^{2}\,H_t^{22}(x,y)\\&\quad+\frac{t^{2}}{8}\,[s'(x_{2})s(x_{1})]^{2}\,H_t^{11}(x,y)+\frac{t^{2}}{8}\,[s'(x_{1})s(x_{2})]^{2}\,H_t^{22}(x,y)\\&\quad-\frac{t^{2}}{4}\,s'(x_{1})s(x_{1})s'(x_{2})s(x_{2})\,H_t^{12}(x,y)\\&\quad+\frac{t^{3}}{24}\,(s'(x_{2}))^{2}s(x_{1})^{2}s(x_{2})^{2}\,H_t^{1111}(x,y)+\frac{t^{3}}{24}\,(s'(x_{1}))^{2}s(x_{1})^{2}s(x_{2})^{2}\,H_t^{2222}(x,y)\\&\quad+\frac{t^{3}}{12}\,s'(x_{1})s'(x_{2})s(x_{1})s(x_{2})^{3}\,H_t^{1112}(x,y)+\frac{t^{3}}{12}\,s'(x_{1})s'(x_{2})s(x_{1})^{3}s(x_{2})\,H_t^{1222}(x,y)\\&\quad+\left[\frac{t^{3}}{6}\,s''(x_{1})s(x_{1})s(x_{2})^{4}+\frac{t^{3}}{6}\,s''(x_{2})s(x_{2})s(x_{1})^{4}\right.\\&\quad\quad\left.+\frac{t^{3}}{24}\,(s'(x_{2}))^{2}s(x_{1})^{4}+\frac{t^{3}}{24}\,(s'(x_{1}))^{2}s(x_{2})^{4}\right]H_t^{1122}(x,y).\end{aligned})
 
 *   **Simulation Plot:** [D2S_plot](./D2S/D2S_plot.ipynb), [2DD2S_plot](./2D/2D_plot.ipynb)
 *   **Simulation Code:** [D2S](./D2S/), [2DD2S](./2D/)
