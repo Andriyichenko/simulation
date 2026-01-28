@@ -63,10 +63,7 @@ The file naming convention used throughout this project is as follows:
 *   **`M` prefix** (e.g., `MM1`, `MM2`):
     *   Indicates that the simulation focuses on the **Max Measure** (strong convergence).
     *   This prefix corresponds to the methods described in the [Max Measure (M)](#7-max-measure-m) section.
-    *   Files with this prefix typically calculate the error defined by the maximum difference over the path, specifically 
-$$
-\mathbb{E} \left[ \max_{i=1,\ldots,n} \|X_{t_{i,n}} - \bar{X}^\theta_{t_{i,n}}\|^2 \right]\quad\cdots\text{(M)}
-$$
+    *   Files with this prefix typically calculate the error defined by the maximum difference over the path, specifically, $\mathbb{E}[\max_{i=1,\ldots,n} \|X_{t_{i,n}} - \bar{X}^\theta_{t_{i,n}}\|^2]}$
 
 *   **`_check` suffix** (e.g., `LTM1_check`):
     *   Represents **self-verification** of a function or scheme.  
