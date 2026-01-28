@@ -544,6 +544,7 @@ $$
 
 
 $w_1, w_2 \sim N(0, t)$ are independent
+Where,
 
 $$
 \begin{aligned}
