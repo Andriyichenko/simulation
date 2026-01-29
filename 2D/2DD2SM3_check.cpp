@@ -209,15 +209,15 @@ inline double Delta2(const State& x, const State& y, double t) {
     double dds_x1 = dds_func(x(0));
     double dds_x2 = dds_func(x(1));
 
-    // a(x) = [x2, -x1]
-    double a1 = x(0);
-    double a2 = x(1);
+    // a(x) = [-x1,-x2]
+    double a1 = -x(0);
+    double a2 = -x(1);
     
     // Derivatives of drift: 
-    // ∂1 a1 = 0, ∂2 a1 = 1
-    // ∂1 a2 = -1, ∂2 a2 = 0
-    double da1_dx1 = 0.0; double da1_dx2 = 1.0;
-    double da2_dx1 = -1.0; double da2_dx2 = 0.0;
+    // ∂1 a1 = -1, ∂2 a1 = 0
+    // ∂1 a2 = 0, ∂2 a2 = -1
+    double da1_dx1 = -1.0; double da1_dx2 = 0.0;
+    double da2_dx1 = 0.0; double da2_dx2 = -1.0;
 
     // r = y - x - a(x)t
     double r1 = y(0) - x(0) - a1 * t;
@@ -437,13 +437,16 @@ int main() {
                 State st_mil = x0_state;
                 State st_15  = x0_state;
                 State st_nm  = x0_state;
+                State st_nm_y = x0_state;
 
-                double D_A0  = 0.0, D_A1  = 0.0, D_A2  = 0.0, D_nm = 0.0;
+                double D_A0  = 0.0, D_A1  = 0.0, D_A2  = 0.0, D_benchmark = 0.0;
                 double sum_A0 = 0.0, sum_A1 = 0.0, sum_A2 = 0.0,sum_nm = 0.0;
                 
+
                 for (int idx = 1; idx < points; ++idx) {
                     double Z1 = 0.0;
                     double Z2 = 0.0;
+                    st_nm = st_nm_y;
 
                     //slide benchmark formula of D4 (Slide Milstein formula)
                     for (int m = 0; m < points; ++m){
@@ -451,31 +454,35 @@ int main() {
                         double Z1_nm = dist(rng_nm);
                         double Z2_nm = dist(rng1_nm);
                         State nm_benchmark = A1(st_nm, dtm, Z1_nm, Z2_nm);
-                        double delta_nm = Delta2(st_nm, nm_benchmark, dtm);
-                        D_nm += delta_nm;
                         st_nm = nm_benchmark;
                         Z1 += Z1_nm / sqrt(points);
                         Z2 += Z2_nm / sqrt(points);
-                        
                     }
+                    // take the st_nm value after inner loop
+                    State st_nm_benchmark = st_nm;
                     
+                    // Now perform one step for EM, Milstein, and 1.5 schemes
                     State next_em  = A0(st_em, dt, Z1, Z2);
                     State next_mil = A1(st_mil, dt, Z1, Z2);
                     State next_15  = A2(st_15, dt, Z1, Z2);
 
+                    // Update Deltas2 formula
                     D_A0  += Delta2(st_em, next_em, dt);
                     D_A1 += Delta2(st_mil, next_mil, dt);
                     D_A2  += Delta2(st_15, next_15, dt);
+                    D_benchmark += Delta2(st_nm_y, st_nm_benchmark, dtm);
 
+                    // Move to next step
                     st_em  = next_em;
                     st_mil = next_mil;
                     st_15  = next_15;
+                    st_nm_y = st_nm_benchmark;
                 }
                 
                 sum_A0 = D_A0;
                 sum_A1 = D_A1;
                 sum_A2 = D_A2;
-                sum_nm = D_nm;
+                sum_nm = D_benchmark;
 
                 S += sgn(sum_A0) / sqrt(dt);
                 Sm += sgn(sum_A1) / sqrt(dt);
