@@ -172,9 +172,9 @@ inline double Delta1(const State& x, const State& y, double t) {
     double ds_x1 = ds_func(x(0));
     double ds_x2 = ds_func(x(1));
 
-    //a(x) = [x2, -x1]
-    double a1 = x(0);
-    double a2 = x(1);
+    //a(x) = [-x1, -x2]
+    double a1 = -x(0);
+    double a2 = -x(1);
     // double a1 = 0.0;
     // double a2 = 0.0;
 
@@ -210,16 +210,16 @@ inline double Delta2(const State& x, const State& y, double t) {
     double dds_x1 = dds_func(x(0));
     double dds_x2 = dds_func(x(1));
 
-    // a(x) = [x2, -x1]
-    double a1 = x(0);
-    double a2 = x(1);
+    // a(x) = [-x1, -x2]
+    double a1 = -x(0);
+    double a2 = -x(1);
     
 
     // Derivatives of drift: 
     // ∂1 a1 = 0, ∂2 a1 = 1
     // ∂1 a2 = -1, ∂2 a2 = 0
-    double da1_dx1 = 0.0; double da1_dx2 = 1.0;
-    double da2_dx1 = -1.0; double da2_dx2 = 0.0;
+    double da1_dx1 = -1.0; double da1_dx2 = 0.0;
+    double da2_dx1 = 0.0; double da2_dx2 = -1.0;
 
     // r = y - x - a(x)t
     double r1 = y(0) - x(0) - a1 * t;
@@ -289,7 +289,7 @@ inline double Delta2(const State& x, const State& y, double t) {
 inline State A0(const State& curr, double dt, double Z1, double Z2) {
     const double sqrt_dt = sqrt(dt);
     Vector2d dW(sqrt_dt * Z1, sqrt_dt * Z2);
-    Vector2d drift(curr(1), -curr(0));
+    Vector2d drift(-curr(0), -curr(1));
     Vector2d diffusion(s_func(curr(1)) * dW(0), s_func(curr(0)) * dW(1));
     return curr + drift * dt + diffusion; 
 }
@@ -304,7 +304,7 @@ inline State A1(const State& curr, double dt, double Z1, double Z2) {
     double ds_x0 = ds_func(curr(0));
     double ds_x1 = ds_func(curr(1));
 
-    Vector2d drift(curr(1), -curr(0));
+    Vector2d drift(-curr(0), -curr(1));
     Vector2d diffusion(s_x1 * dW(0), s_x0 * dW(1));
     State base = curr + drift * dt + diffusion;
 
@@ -330,7 +330,7 @@ inline State A2(const State& curr, double dt, double Z1, double Z2) {
     double dds0 = dds_func(curr(0));
     double dds1 = dds_func(curr(1));
     
-    Vector2d a(curr(1), -curr(0));
+    Vector2d a(-curr(0), -curr(1));
 
     double w111 = (w1 * w1_sq) - 3.0 * dt * w1;
     double w222 = (w2 * w2_sq) - 3.0 * dt * w2;
@@ -439,27 +439,27 @@ int main() {
                 State st_mil = x0_state;
                 State st_15  = x0_state;
                 State st_nm  = x0_state;
+                State st_nm_y = x0_state;
 
-                double D_A0  = 0.0, D_A1  = 0.0, D_A2  = 0.0, D_nm = 0.0;
+                double D_A0  = 0.0, D_A1  = 0.0, D_A2  = 0.0, D_nm = 0.0,D_benchmark = 0.0;
                 double sum_A0 = 0.0, sum_A1 = 0.0, sum_A2 = 0.0,sum_nm = 0.0;
                 
                 for (int idx = 1; idx < points; ++idx) {
                     double Z1 = 0.0;
                     double Z2 = 0.0;
-
+                    st_nm = st_nm_y;
                     //slide benchmark formula of D4 (Slide Milstein formula)
                     for (int m = 0; m < points; ++m){
 
                         double Z1_nm = dist(rng_nm);
                         double Z2_nm = dist(rng1_nm);
                         State nm_benchmark = A1(st_nm, dtm, Z1_nm, Z2_nm);
-                        double delta_nm = Delta2(st_nm, nm_benchmark, dtm);
-                        D_nm += delta_nm;
                         st_nm = nm_benchmark;
                         Z1 += Z1_nm / sqrt(points);
                         Z2 += Z2_nm / sqrt(points);
                         
                     }
+                    State nm_benchmark_y = st_nm;
                     
                     State next_em  = A0(st_em, dt, Z1, Z2);
                     State next_mil = A1(st_mil, dt, Z1, Z2);
@@ -468,16 +468,18 @@ int main() {
                     D_A0  += Delta2(st_em, next_em, dt);
                     D_A1 += Delta2(st_mil, next_mil, dt);
                     D_A2  += Delta2(st_15, next_15, dt);
+                    D_benchmark += Delta2(st_nm_y, nm_benchmark_y, dt);
 
                     st_em  = next_em;
                     st_mil = next_mil;
                     st_15  = next_15;
+                    st_nm_y = nm_benchmark_y;
                 }
                 
                 sum_A0 = D_A0;
                 sum_A1 = D_A1;
                 sum_A2 = D_A2;
-                sum_nm = D_nm;
+                sum_nm = D_benchmark;
 
                 S += (sgn(sum_A0) - sgn(sum_nm)) / sqrt(dt);
                 Sm += (sgn(sum_A1) - sgn(sum_nm)) / sqrt(dt);

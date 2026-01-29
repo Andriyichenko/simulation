@@ -172,8 +172,8 @@ inline double Delta1(const State& x, const State& y, double t) {
     double ds_x2 = ds_func(x(1));
 
     //a(x) = [x2, -x1]
-    double a1 = x(0);
-    double a2 = x(1);
+    double a1 = x(1);
+    double a2 = -x(0);
     // double a1 = 0.0;
     // double a2 = 0.0;
 

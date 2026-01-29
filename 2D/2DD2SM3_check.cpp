@@ -470,7 +470,7 @@ int main() {
                     D_A0  += Delta2(st_em, next_em, dt);
                     D_A1 += Delta2(st_mil, next_mil, dt);
                     D_A2  += Delta2(st_15, next_15, dt);
-                    D_benchmark += Delta2(st_nm_y, st_nm_benchmark, dtm);
+                    D_benchmark += Delta2(st_nm_y, st_nm_benchmark, dt);
 
                     // Move to next step
                     st_em  = next_em;
@@ -487,12 +487,12 @@ int main() {
                 S += sgn(sum_A0) / sqrt(dt);
                 Sm += sgn(sum_A1) / sqrt(dt);
                 S_1_5 += sgn(sum_A2) / sqrt(dt);
-                Snm += sgn(sum_nm) / sqrt(dtm);
+                Snm += sgn(sum_nm) / sqrt(dt);
 
                 B += sgn(sum_A0) * sgn(sum_A0) / dt;
                 Bm += sgn(sum_A1) * sgn(sum_A1) / dt;
                 B_1_5 += sgn(sum_A2) * sgn(sum_A2) / dt;
-                Bnm += sgn(sum_nm) * sgn(sum_nm) / dtm;
+                Bnm += sgn(sum_nm) * sgn(sum_nm) / dt;
 
             }
        } // End of parallel region

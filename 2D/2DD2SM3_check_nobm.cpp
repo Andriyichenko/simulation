@@ -144,9 +144,9 @@ inline double Delta1(const State& x, const State& y, double t) {
     double ds_x1 = ds_func(x(0));
     double ds_x2 = ds_func(x(1));
 
-    // a(x) = [x2, -x1]
-    double a1 = x(1);
-    double a2 = -x(0);
+    // a(x) = [-x1, -x2]
+    double a1 = -x(0);
+    double a2 = -x(1);
 
     // r = y - x - a(x)t
     double r1 = y(0) - x(0) - a1 * t;
@@ -258,7 +258,7 @@ inline double Delta2(const State& x, const State& y, double t) {
 inline State A0(const State& curr, double dt, double Z1, double Z2) {
     const double sqrt_dt = sqrt(dt);
     Vector2d dW(sqrt_dt * Z1, sqrt_dt * Z2);
-    Vector2d drift(curr(1), -curr(0));
+    Vector2d drift(-curr(0), -curr(1));
     Vector2d diffusion(s_func(curr(1)) * dW(0), s_func(curr(0)) * dW(1));
     return curr + drift * dt + diffusion; 
 }
@@ -273,7 +273,7 @@ inline State A1(const State& curr, double dt, double Z1, double Z2) {
     double ds_x0 = ds_func(curr(0));
     double ds_x1 = ds_func(curr(1));
 
-    Vector2d drift(curr(1), -curr(0));
+    Vector2d drift(-curr(0), -curr(1));
     Vector2d diffusion(s_x1 * dW(0), s_x0 * dW(1));
     State base = curr + drift * dt + diffusion;
 
@@ -299,7 +299,7 @@ inline State A2(const State& curr, double dt, double Z1, double Z2) {
     double dds0 = dds_func(curr(0));
     double dds1 = dds_func(curr(1));
     
-    Vector2d a(curr(1), -curr(0));
+    Vector2d a(-curr(0), -curr(1));
 
     double w111 = (w1 * w1_sq) - 3.0 * dt * w1;
     double w222 = (w2 * w2_sq) - 3.0 * dt * w2;
