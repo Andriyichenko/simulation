@@ -113,7 +113,7 @@ The files in the `data_source/` directory follow a naming convention that links 
     *   Corresponds to C++ files with the `_nobm` suffix (e.g., `2DLTM3_nobm.cpp`).
 
 *   **`_ax2-x1` suffix** (e.g., `2DD2SM3_check_ax2-x1_100_1000_data.csv`):
-    *   Indicates that the dataset was generated from **2D model simulations** with the drift coefficient $a(x) = \begin{pmatrix} x_2 \\ -x_1 \end{pmatrix}$.
+    *   Indicates that the dataset was generated from **2D model simulations** with the drift coefficient $a(x) = \left( {a_1(x) \atop a_2(x)}\right)$.
     *   This is the specific drift term used in Model 3's 2-dimensional setting.
     *   Files with this suffix correspond to simulations where this particular drift configuration is applied.
 
