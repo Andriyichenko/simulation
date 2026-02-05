@@ -172,8 +172,8 @@ inline double Delta1(const State& x, const State& y, double t) {
     double ds_x2 = ds_func(x(1));
 
     //a(x) = [x2, -x1]
-    double a1 = x(0);
-    double a2 = x(1);
+    double a1 = x(1);
+    double a2 = -x(0);
     // double a1 = 0.0;
     // double a2 = 0.0;
 
@@ -209,15 +209,15 @@ inline double Delta2(const State& x, const State& y, double t) {
     double dds_x1 = dds_func(x(0));
     double dds_x2 = dds_func(x(1));
 
-    // a(x) = [-x1,-x2]
-    double a1 = -x(0);
-    double a2 = -x(1);
+    // a(x) = [x2,-x1]
+    double a1 = x(1);
+    double a2 = -x(0);
     
     // Derivatives of drift: 
-    // ∂1 a1 = -1, ∂2 a1 = 0
-    // ∂1 a2 = 0, ∂2 a2 = -1
-    double da1_dx1 = -1.0; double da1_dx2 = 0.0;
-    double da2_dx1 = 0.0; double da2_dx2 = -1.0;
+    // ∂1 a1 = 0, ∂2 a1 = 1
+    // ∂1 a2 = -1, ∂2 a2 = 0
+    double da1_dx1 = 0.0; double da1_dx2 = 1.0;
+    double da2_dx1 = -1.0; double da2_dx2 = 0.0;
 
     // r = y - x - a(x)t
     double r1 = y(0) - x(0) - a1 * t;
@@ -287,7 +287,7 @@ inline double Delta2(const State& x, const State& y, double t) {
 inline State A0(const State& curr, double dt, double Z1, double Z2) {
     const double sqrt_dt = sqrt(dt);
     Vector2d dW(sqrt_dt * Z1, sqrt_dt * Z2);
-    Vector2d drift(-curr(0), -curr(1));
+    Vector2d drift(curr(1), -curr(0));
     Vector2d diffusion(s_func(curr(1)) * dW(0), s_func(curr(0)) * dW(1));
     return curr + drift * dt + diffusion; 
 }
@@ -302,7 +302,7 @@ inline State A1(const State& curr, double dt, double Z1, double Z2) {
     double ds_x0 = ds_func(curr(0));
     double ds_x1 = ds_func(curr(1));
 
-    Vector2d drift(-curr(0), -curr(1));
+    Vector2d drift(curr(1), -curr(0));
     Vector2d diffusion(s_x1 * dW(0), s_x0 * dW(1));
     State base = curr + drift * dt + diffusion;
 
@@ -328,7 +328,7 @@ inline State A2(const State& curr, double dt, double Z1, double Z2) {
     double dds0 = dds_func(curr(0));
     double dds1 = dds_func(curr(1));
     
-    Vector2d a(-curr(0), -curr(1));
+    Vector2d a(curr(1), -curr(0));
 
     double w111 = (w1 * w1_sq) - 3.0 * dt * w1;
     double w222 = (w2 * w2_sq) - 3.0 * dt * w2;
@@ -399,7 +399,7 @@ int main() {
 
     const string dir_path = "../data_source";
     system(("mkdir -p " + dir_path).c_str()); 
-    const string csv_path = dir_path + "/2DD2SM3_check_100_1000_data.csv"; 
+    const string csv_path = dir_path + "/2DD2SM3_check_nodt_100_1000_data.csv"; 
     ofstream ofs(csv_path, ios::out | ios::trunc);
     
     if (!ofs) {
@@ -484,15 +484,15 @@ int main() {
                 sum_A2 = D_A2;
                 sum_nm = D_benchmark;
 
-                S += sgn(sum_A0) / sqrt(dt);
-                Sm += sgn(sum_A1) / sqrt(dt);
-                S_1_5 += sgn(sum_A2) / sqrt(dt);
-                Snm += sgn(sum_nm) / sqrt(dt);
+                S += sgn(sum_A0) ;
+                Sm += sgn(sum_A1) ;
+                S_1_5 += sgn(sum_A2) ;
+                Snm += sgn(sum_nm) ;
 
-                B += sgn(sum_A0) * sgn(sum_A0) / dt;
-                Bm += sgn(sum_A1) * sgn(sum_A1) / dt;
-                B_1_5 += sgn(sum_A2) * sgn(sum_A2) / dt;
-                Bnm += sgn(sum_nm) * sgn(sum_nm) / dt;
+                B += sgn(sum_A0) * sgn(sum_A0) ;
+                Bm += sgn(sum_A1) * sgn(sum_A1) ;
+                B_1_5 += sgn(sum_A2) * sgn(sum_A2) ;
+                Bnm += sgn(sum_nm) * sgn(sum_nm) ;
 
             }
        } // End of parallel region

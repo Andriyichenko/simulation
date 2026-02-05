@@ -1,4 +1,4 @@
-// D2SM1_check with x_0=1, T=1, a=0.5, b=0.5
+// D2SM1_check_nodt with x_0=1, T=1, a=0.5, b=0.5
 
 #include <algorithm>  
 #include <cmath>       
@@ -203,7 +203,7 @@ int main() {
     // CSV ファイル名の設定
     const string dir_path = "../data_source";
     system(("mkdir -p " + dir_path).c_str()); //フォルダーの確認 
-    const string csv_path = dir_path + "/D2SM1_check_100_1000_data.csv"; //data sourceのファイル名指定
+    const string csv_path = dir_path + "/D2SM1_check_nodt_100_1000_data.csv"; //data sourceのファイル名指定
     ofstream ofs(csv_path, ios::out | ios::trunc);
     
     if (!ofs) {
@@ -289,14 +289,14 @@ int main() {
 
                 }
 
-                    S  += sgn(dX0) / sqrt(dt);      
-                    Sm += sgn(dX1) / sqrt(dt);      
-                    S_1_5 += sgn(dX2) / sqrt(dt); 
-                    Sb += sgn(dX_b) / sqrt(dt);   
-                    B += sgn(dX0) * sgn(dX0) / dt; 
-                    Bm += sgn(dX1) * sgn(dX1) / dt;
-                    B_1_5 += sgn(dX2) * sgn(dX2) / dt; 
-                    Bb += sgn(dX_b) * sgn(dX_b) / dt;  
+                    S  += sgn(dX0);      
+                    Sm += sgn(dX1);      
+                    S_1_5 += sgn(dX2); 
+                    Sb += sgn(dX_b);   
+                    B += sgn(dX0) * sgn(dX0); 
+                    Bm += sgn(dX1) * sgn(dX1);
+                    B_1_5 += sgn(dX2) * sgn(dX2); 
+                    Bb += sgn(dX_b) * sgn(dX_b);  
 
             
            
