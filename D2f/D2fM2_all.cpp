@@ -1,4 +1,5 @@
 // D2fM2 with x_0=1, T=1, a=0.5, b=0.5
+// this sgn function case in the file D2f/D2fM2_all.cpp
 
 #include <algorithm>  
 #include <sstream>
@@ -199,9 +200,9 @@ inline double compute_sum_state(double delta_val) {
 // inline double f(double x, double min_val = -1.0, double max_val = 1.0) {
 //     return max(min_val, min(x, max_val));
 // }
-inline double f(double x, double min_val = -1.0, double max_val = 1.0) {
+inline double f(double x, double min_val = -100.0, double max_val = 1.0) {
     if (isnan(x)) return 0;
-    return 0*(x > 0) - (x < 0);
+    return (x > 0) - (x < 0);
     //return max(min_val, min(x, max_val));
 }
 
