@@ -1,4 +1,5 @@
 // D1fM2_check with x_0=1, T=1, a=0.5, b=0.5
+//try to use sgn function in _check and difference files 
 
 #include <algorithm>  
 #include <cmath>       

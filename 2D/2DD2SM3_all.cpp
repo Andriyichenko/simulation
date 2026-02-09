@@ -1,6 +1,6 @@
-// 2DD2SM3
-//Error simulation for 2DD2SM3 scheme
-//// s(x) = 2 + min(max(-1, x), 4) and s'(x) = 1 if -1 <= x <= 4 else 0
+// 2DD2SM3_all.cpp with a(x) = [x2, -x1]
+// Error simulation for 2DD2SM3 scheme with Limit Simulation I_T^1
+// s(x) = 2 + sin(x)
 
 #include <Eigen/Dense>
 #include <algorithm>  
@@ -61,27 +61,13 @@ inline double f_clip(double x) {
     return min(max_val, max(x, min_val));
 }
 
-
-
-
-// s(x) = 2 + min(max(-1, x), 4)
-inline double s_func(double x) { return 2.0 + f_clip(x); }
-// s'(x) = 1 if -1 <= x <= 4 else 0
-inline double ds_func(double x) {
-    if (x >= -1.0 && x <= 4.0) {
-        return 1.0;
-    } else {
-        return 0.0;
-    }
-}
-
-// inline double s_func(double x) { return 1.0; }
-//inline double ds_func(double x) { return 0.0; }
-
-
-
-// s''(x) = 0
-inline double dds_func(double x) { return 0.0; }
+// ========================================
+// S functions and derivatives
+// s(x) = 2 + sin(x)
+// ========================================
+inline double s_func(double x) { return 2.0 + sin(x); }
+inline double ds_func(double x) { return cos(x); }
+inline double dds_func(double x) { return -sin(x); }
 
 
 // ========================================
@@ -89,31 +75,24 @@ inline double dds_func(double x) { return 0.0; }
 // ========================================
 
 inline double H11(double t, double r1, double S2) {
-    // H^{11} = r1^2 / (t^2 * S2^2) - 1 / (t * S2)
-    // Note: S2 here represents s(x2)^2
     return (r1 * r1) / (t * t * S2 * S2) - 1.0 / (t * S2);
 }
 
 inline double H22(double t, double r2, double S1) {
-    // H^{22} = r2^2 / (t^2 * S1^2) - 1 / (t * S1)
-    // Note: S1 here represents s(x1)^2
     return (r2 * r2) / (t * t * S1 * S1) - 1.0 / (t * S1);
 }
 
 inline double H12(double t, double r1, double r2, double S1, double S2) {
-    // H^{12} = (r1 * r2) / (t^2 * S2 * S1)
     return (r1 * r2) / (t * t * S2 * S1);
 }
 
 inline double H112(double t, double r1, double r2, double S1, double S2) {
-    // H^{112} = r1^2*r2 / (t^3 * S2^2 * S1) - r2 / (t^2 * S2 * S1)
     double term1 = (r1 * r1 * r2) / (t * t * t * S2 * S2 * S1);
     double term2 = r2 / (t * t * S2 * S1);
     return term1 - term2;
 }
 
 inline double H221(double t, double r1, double r2, double S1, double S2) {
-    // H^{221} = r2^2*r1 / (t^3 * S1^2 * S2) - r1 / (t^2 * S1 * S2)
     double term1 = (r2 * r2 * r1) / (t * t * t * S1 * S1 * S2);
     double term2 = r1 / (t * t * S1 * S2);
     return term1 - term2;
@@ -126,8 +105,6 @@ inline double H1111(double t, double r1, double S2) {
     double S2_2 = S2 * S2;
     double S2_3 = S2_2 * S2;
     double S2_4 = S2_2 * S2_2;
-    
-    // H^{1111}
     return pow(r1, 4) / (t4 * S2_4) - 6.0 * pow(r1, 2) / (t3 * S2_3) + 3.0 / (t2 * S2_2);
 }
 
@@ -138,72 +115,29 @@ inline double H2222(double t, double r2, double S1) {
     double S1_2 = S1 * S1;
     double S1_3 = S1_2 * S1;
     double S1_4 = S1_2 * S1_2;
-
-    // H^{2222}
     return pow(r2, 4) / (t4 * S1_4) - 6.0 * pow(r2, 2) / (t3 * S1_3) + 3.0 / (t2 * S1_2);
 }
 
 inline double H1112(double t, double r1, double r2, double S1, double S2) {
     double t3 = t * t * t;
     double t4 = t3 * t;
-    // H^{1112}
     return (pow(r1, 3) * r2) / (t4 * pow(S2, 3) * S1) - (3.0 * r1 * r2) / (t3 * pow(S2, 2) * S1);
 }
 
 inline double H1222(double t, double r1, double r2, double S1, double S2) {
     double t3 = t * t * t;
     double t4 = t3 * t;
-    // H^{1222}
     return (r1 * pow(r2, 3)) / (t4 * S2 * pow(S1, 3)) - (3.0 * r1 * r2) / (t3 * S2 * pow(S1, 2));
 }
 
 inline double H1122(double t, double r1, double r2, double S1, double S2) {
-    // H^{1122} = H^{11} * H^{22}
     return H11(t, r1, S2) * H22(t, r2, S1);
 }
 
 // ========================================
-// Delta Calculations (Delta^1 & Delta^2)
+// Delta Calculations (Delta^2)
 // ========================================
-// Delta^1 Formula
-inline double Delta1(const State& x, const State& y, double t) {
-    // 1. Prepare variables
-    double s_x1 = s_func(x(0));
-    double s_x2 = s_func(x(1));
-    double ds_x1 = ds_func(x(0));
-    double ds_x2 = ds_func(x(1));
-
-    //a(x) = [-x1, -x2]
-    double a1 = -x(0);
-    double a2 = -x(1);
-    // double a1 = 0.0;
-    // double a2 = 0.0;
-
-    // r = y - x - a(x)t
-    double r1 = y(0) - x(0) - a1 * t;
-    double r2 = y(1) - x(1) - a2 * t;
-
-    // S1 = s(x1)^2, S2 = s(x2)^2
-    double S1 = s_x1 * s_x1;
-    double S2 = s_x2 * s_x2;
-
-    // 2. Compute Hermite terms
-    double h112 = H112(t, r1, r2, S1, S2);
-    double h221 = H221(t, r1, r2, S1, S2);
-
-    // 3. Compute Delta^1
-    // Term 1: 0.5 * t^2 * s'(x2) * s(x2) * s(x1)^2 * H^{112}
-    double term1 = 0.5 * t * t * ds_x2 * s_x2 * S1 * h112;
-
-    // Term 2: 0.5 * t^2 * s'(x1) * s(x1) * s(x2)^2 * H^{221}
-    double term2 = 0.5 * t * t * ds_x1 * s_x1 * S2 * h221;
-
-    return term1 + term2;
-}
-
-// Delta^2 Formula
 inline double Delta2(const State& x, const State& y, double t) {
-    // 1. Prepare variables
     double s_x1 = s_func(x(0));
     double s_x2 = s_func(x(1));
     double ds_x1 = ds_func(x(0));
@@ -215,25 +149,17 @@ inline double Delta2(const State& x, const State& y, double t) {
     double a1 = x(1);
     double a2 = -x(0);
     
-
-    // Derivatives of drift: 
-    // ∂1 a1 = 0, ∂2 a1 = 1
-    // ∂1 a2 = -1, ∂2 a2 = 0
     double da1_dx1 = 0.0; double da1_dx2 = 1.0;
     double da2_dx1 = -1.0; double da2_dx2 = 0.0;
 
-    // r = y - x - a(x)t
     double r1 = y(0) - x(0) - a1 * t;
     double r2 = y(1) - x(1) - a2 * t;
 
-    // S1 = s(x1)^2, S2 = s(x2)^2
     double S1 = s_x1 * s_x1;
     double S2 = s_x2 * s_x2;
-    // S'(x) = 2*s(x)*s'(x)
     double S_prime_x1 = 2.0 * s_x1 * ds_x1;
     double S_prime_x2 = 2.0 * s_x2 * ds_x2;
 
-    // 2. Compute Hermite terms
     double h11 = H11(t, r1, S2);
     double h22 = H22(t, r2, S1);
     double h12 = H12(t, r1, r2, S1, S2);
@@ -246,33 +172,15 @@ inline double Delta2(const State& x, const State& y, double t) {
     double t2 = t * t;
     double t3 = t * t * t;
 
-    // 3. Compute Delta^2 lines (matching the formula)
-    
-    // Line 1: 0.5*t^2 [ ∂1 a1 * S2 * H11 + ∂2 a1 * S1 * H12 ]
     double L1 = 0.5 * t2 * (da1_dx1 * S2 * h11 + da1_dx2 * S1 * h12);
-
-    // Line 2: 0.5*t^2 [ ∂1 a2 * S2 * H12 + ∂2 a2 * S1 * H22 ]
     double L2 = 0.5 * t2 * (da2_dx1 * S2 * h12 + da2_dx2 * S1 * h22);
-
-    // Line 3: 0.25*t^2 [ S'(x2)*a2 * H11 + S'(x1)*a1 * H22 ]
     double L3 = 0.25 * t2 * (S_prime_x2 * a2 * h11 + S_prime_x1 * a1 * h22);
-
-    // Line 4: 0.25*t^2 [ s''(x2)s(x2)S1 * H11 + s''(x1)s(x1)S2 * H22 ]
     double L4 = 0.25 * t2 * (dds_x2 * s_x2 * S1 * h11 + dds_x1 * s_x1 * S2 * h22);
-
-    // Line 5: 0.125*t^2 [ (s'(x2)s(x1))^2 * H11 + (s'(x1)s(x2))^2 * H22 ] - 0.25*t^2 [ s'(x1)s(x1)s'(x2)s(x2) * H12 ]
     double L5 = 0.125 * t2 * (pow(ds_x2 * s_x1, 2) * h11 + pow(ds_x1 * s_x2, 2) * h22)
               - 0.25 * t2 * (ds_x1 * s_x1 * ds_x2 * s_x2 * h12);
-
-    // Line 6: t^3/24 [ (s'(x2))^2 S1 S2 * H1111 + (s'(x1))^2 S1 S2 * H2222 ]
     double L6 = (t3 / 24.0) * (pow(ds_x2, 2) * S1 * S2 * h1111 + pow(ds_x1, 2) * S1 * S2 * h2222);
-
-    // Line 7: t^3/12 [ s'(x1)s'(x2) S1 S2^1.5 * H1112 + s'(x1)s'(x2) S1^1.5 S2 * H1222 ]
-    // Note: S1*S2^1.5 = s(x1)^2 * s(x2)^3, S1^1.5*S2 = s(x1)^3 * s(x2)^2
     double L7 = (t3 / 12.0) * (ds_x1 * ds_x2 * S1 * pow(s_x2, 3) * h1112 + ds_x1 * ds_x2 * pow(s_x1, 3) * S2 * h1222);
-
-    // Line 8: Big bracket term * H1122
-    // Bracket = t^3/6 s''(x1)s(x1)S2^2 + t^3/6 s''(x2)s(x2)S1^2 + t^3/24 (s'(x2))^2 S1^2 + t^3/24 (s'(x1))^2 S2^2
+    
     double term8_1 = (t3 / 6.0) * dds_x1 * s_x1 * pow(S2, 2);
     double term8_2 = (t3 / 6.0) * dds_x2 * s_x2 * pow(S1, 2);
     double term8_3 = (t3 / 24.0) * pow(ds_x2, 2) * pow(S1, 2);
@@ -283,7 +191,7 @@ inline double Delta2(const State& x, const State& y, double t) {
 }
 
 // ========================================
-// Simulation Schemes from D.1
+// Simulation Schemes
 // ========================================
 
 // Euler-Maruyama (Order 0.5)
@@ -394,15 +302,16 @@ int main() {
     vector<double> A(max_n + 1, 0.0);
     vector<double> Am(max_n + 1, 0.0);
     vector<double> A_1_5(max_n + 1, 0.0);
-    vector<double> Anm(max_n + 1, 0.0);
+    vector<double> A_lim(max_n + 1, 0.0);
+
     vector<double> E(max_n + 1, 0.0);
     vector<double> Em(max_n + 1, 0.0);
     vector<double> E_1_5(max_n + 1, 0.0);
-    vector<double> Enm(max_n + 1, 0.0);
+    vector<double> E_lim(max_n + 1, 0.0);
 
     const string dir_path = "../data_source";
     system(("mkdir -p " + dir_path).c_str()); 
-    const string csv_path = dir_path + "/2DD2SM3_ax2-x1_100_1000_data.csv"; 
+    const string csv_path = dir_path + "/2DD2SM3_all_100_1000_data.csv"; 
     ofstream ofs(csv_path, ios::out | ios::trunc);
     
     if (!ofs) {
@@ -411,7 +320,7 @@ int main() {
     }
     
     ofs.imbue(locale::classic());
-    ofs << "n,points,E,Em,E_1.5,A,Am,A_1.5\n";
+    ofs << "n,points,E,Em,E_1.5,E_lim,A,Am,A_1.5,A_lim\n";
 
     for (int n = 0; n <= max_n; ++n) {
         const int points = 100 + 100 * n; 
@@ -422,14 +331,14 @@ int main() {
         const double sqrt_dtm = sqrt(dtm);
         const double sqrt_dt = sqrt(dt);
 
-        double S = 0.0, Sm = 0.0, S_1_5 = 0.0, Snm = 0.0;
-        double B = 0.0, Bm = 0.0, B_1_5 = 0.0, Bnm = 0.0;
-
-
-        #pragma omp parallel reduction(+:S,Sm,S_1_5,B,Bm,B_1_5) 
+        double S = 0.0, Sm = 0.0, S_1_5 = 0.0, S_lim = 0.0;;
+        double B = 0.0, Bm = 0.0, B_1_5 = 0.0, B_lim = 0.0;
+        
+        #pragma omp parallel reduction(+:S,Sm,S_1_5,S_lim,B,Bm,B_1_5,B_lim) 
         {
             mt19937 rng_nm(40);
             mt19937 rng1_nm(50);
+            mt19937 rng_lim(1000);
 
             normal_distribution<double> dist(mu, sigma);
          
@@ -442,18 +351,110 @@ int main() {
                 State st_nm  = x0_state;
                 State st_nm_y = x0_state;
 
-                double D_A0  = 0.0, D_A1  = 0.0, D_A2  = 0.0, D_nm = 0.0,D_benchmark = 0.0;
-                double sum_A0 = 0.0, sum_A1 = 0.0, sum_A2 = 0.0,sum_nm = 0.0;
+                double D_A0  = 0.0, D_A1  = 0.0, D_A2  = 0.0, D_benchmark = 0.0;
+                double sum_A0 = 0.0, sum_A1 = 0.0, sum_A2 = 0.0, sum_nm = 0.0;
+                
+                // Limit variable Z (I_T^1)
+                double Z_limit = 0.0;
                 
                 for (int idx = 1; idx < points; ++idx) {
                     double Z1 = 0.0;
                     double Z2 = 0.0;
                     st_nm = st_nm_y;
-                    //slide benchmark formula of D4 (Slide Milstein formula)
+                    
                     for (int m = 0; m < points; ++m){
 
                         double Z1_nm = dist(rng_nm);
                         double Z2_nm = dist(rng1_nm);
+                        
+                        // --- Limit Simulation Step (I_T^1) ---
+                        
+                        // Generate independent noise dW~
+                        double Z_tilde = dist(rng_lim);
+                        
+                        // Compute coefficients c^2
+                        double x1 = st_nm(0);
+                        double x2 = st_nm(1);
+                        
+                        double s1 = s_func(x1);
+                        double s2 = s_func(x2);
+                        double ds1 = ds_func(x1);
+                        double ds2 = ds_func(x2);
+                        double dds1 = dds_func(x1);
+                        double dds2 = dds_func(x2);
+                        
+                        // Drift a(x) = (x2, -x1)
+                        // a1 = x2, a2 = -x1
+                        double a1_val = x2;
+                        double a2_val = -x1;
+                        
+                        // partials of a(x) (constant)
+                        // da1/dx1=0, da1/dx2=1
+                        // da2/dx1=-1, da2/dx2=0
+                        
+                        // m=2 Coefficients
+                        // c^2_12 (and c^2_21 by symmetry of formula/permutations)
+                        // Formula: 1/2 * (da1/dx2)/s2 + 1/2 * (da2/dx1)/s1 - 1/4 * ds1*ds2
+                        double c2_12 = 0.5 * (1.0 / s2) + 0.5 * (-1.0 / s1) - 0.25 * ds1 * ds2;
+                        
+                        // c^2_11
+                        // Formula: 1/2 (da1/dx1)/s2 + 1/4 (ds2*a2)/s2^2 + 1/4 (dds2*s1^2)/s2 + 1/8 (ds2*s1)^2/s2^2
+                        double term11_2 = 0.25 * (ds2 * a2_val) / (s2 * s2);
+                        double term11_3 = 0.25 * (dds2 * s1 * s1) / s2;
+                        double term11_4 = 0.125 * (ds2 * s1) * (ds2 * s1) / (s2 * s2);
+                        double c2_11 = term11_2 + term11_3 + term11_4;
+                        
+                        // c^2_22
+                        // Formula: 1/2 (da2/dx2)/s1 + 1/4 (ds1*a1)/s1^2 + 1/4 (dds1*s2^2)/s1 + 1/8 (ds1*s2)^2/s1^2
+                        double term22_2 = 0.25 * (ds1 * a1_val) / (s1 * s1);
+                        double term22_3 = 0.25 * (dds1 * s2 * s2) / s1;
+                        double term22_4 = 0.125 * (ds1 * s2) * (ds1 * s2) / (s1 * s1);
+                        double c2_22 = term22_2 + term22_3 + term22_4;
+                        
+                        // Sum for m=2: 2! * [ (c2_11)^2 + (c2_22)^2 + 2*(c2_12)^2 ]
+                        double Sum_m2 = 2.0 * (pow(c2_11, 2) + pow(c2_22, 2) + 2.0 * pow(c2_12, 2));
+                        
+                        
+                        // m=4 Coefficients
+                        // c^2_1111 = 1/24 * (ds2^2 * s1^2) / s2^2
+                        double c2_1111 = (1.0/24.0) * (pow(ds2, 2) * pow(s1, 2)) / pow(s2, 2);
+                        
+                        // c^2_2222 = 1/24 * (ds1^2 * s2^2) / s1^2
+                        double c2_2222 = (1.0/24.0) * (pow(ds1, 2) * pow(s2, 2)) / pow(s1, 2);
+                        
+                        // c^2_1112 (and c^2_1222) = 1/12 * ds1 * ds2
+                        double c2_1112 = (1.0/12.0) * ds1 * ds2;
+                        double c2_1222 = c2_1112; 
+                        
+                        // c^2_1122
+                        // Formula: 1/6 s''1 (s2^2/s1) + 1/6 s''2 (s1^2/s2) + 1/24 ds2^2 (s1^2/s2^2) + 1/24 ds1^2 (s2^2/s1^2)
+                        double term1122_1 = (1.0/6.0) * dds1 * (pow(s2, 2) / s1);
+                        double term1122_2 = (1.0/6.0) * dds2 * (pow(s1, 2) / s2);
+                        double term1122_3 = (1.0/24.0) * pow(ds2, 2) * (pow(s1, 2) / pow(s2, 2));
+                        double term1122_4 = (1.0/24.0) * pow(ds1, 2) * (pow(s2, 2) / pow(s1, 2));
+                        double c2_1122 = term1122_1 + term1122_2 + term1122_3 + term1122_4;
+                        
+                        // Sum for m=4: 4! * Sum( (c2)^2 )
+                        // (1111): 1
+                        // (2222): 1
+                        // (1112) type:  (1112, 1121, 1211, 2111)
+                        // (1222) type:  (1222, 2122, 2212, 2221)
+                        // (1122) type:  (1122, 1212, 1221, 2112, 2121, 2211)
+                        
+                        double sum_c4_sq = pow(c2_1111, 2) + pow(c2_2222, 2) 
+                                         + 4.0 * pow(c2_1112, 2) 
+                                         + 4.0 * pow(c2_1222, 2) 
+                                         + 6.0 * pow(c2_1122, 2);
+                        
+                        double Sum_m4 = 24.0 * sum_c4_sq;
+                        
+                        // Total Integrand
+                        double integrand = sqrt(Sum_m2 + Sum_m4);
+                        
+                        // Accumulate Integral Z_limit
+                        Z_limit += integrand * Z_tilde * sqrt_dtm;
+
+                        //Update Benchmark State
                         State nm_benchmark = A1(st_nm, dtm, Z1_nm, Z2_nm);
                         st_nm = nm_benchmark;
                         Z1 += Z1_nm / sqrt(points);
@@ -482,13 +483,19 @@ int main() {
                 sum_A2 = D_A2;
                 sum_nm = D_benchmark;
 
+                // Accumulate Expectation
                 S += (sgn(sum_A0) - sgn(sum_nm)) / sqrt(dt);
                 Sm += (sgn(sum_A1) - sgn(sum_nm)) / sqrt(dt);
                 S_1_5 += (sgn(sum_A2) - sgn(sum_nm)) / sqrt(dt);
                 
+                // Accumulate Variance
                 B += (sgn(sum_A0) - sgn(sum_nm)) * (sgn(sum_A0) - sgn(sum_nm)) / dt;
                 Bm += (sgn(sum_A1) - sgn(sum_nm)) * (sgn(sum_A1) - sgn(sum_nm)) / dt;
                 B_1_5 += (sgn(sum_A2) - sgn(sum_nm)) * (sgn(sum_A2) - sgn(sum_nm)) / dt;
+                
+                // Accumulate Limit Stats
+                S_lim += Z_limit;
+                B_lim += Z_limit * Z_limit;
 
             }
        } // End of parallel region
@@ -501,6 +508,10 @@ int main() {
         E[n] = B * inv_paths - A[n] * A[n];
         Em[n] = Bm * inv_paths - Am[n] * Am[n];
         E_1_5[n] = B_1_5 * inv_paths - A_1_5[n] * A_1_5[n];
+        
+        // Compute Limit Means and Variances
+        A_lim[n] = S_lim * inv_paths;
+        E_lim[n] = B_lim * inv_paths - A_lim[n] * A_lim[n];
 
         cout << "-------------------------------------------------" << n << "\n";      
         cout << setprecision(10) << "points = " << points << "\n";       
@@ -508,13 +519,17 @@ int main() {
         cout << setprecision(15) << "Var EM      = " << E[n] << "\n";         
         cout << setprecision(15) << "Var Milstein = " << Em[n] << "\n";         
         cout << setprecision(15) << "Var 1.5     = " << E_1_5[n] << "\n";      
+        cout << setprecision(15) << "Var Limit   = " << E_lim[n] << "\n"; 
         cout << setprecision(15) << "Mean EM     = " << A[n] << "\n";          
         cout << setprecision(15) << "Mean Milstein = " << Am[n] << "\n";         
         cout << setprecision(15) << "Mean 1.5    = " << A_1_5[n] << "\n";      
+        cout << setprecision(15) << "Mean Limit  = " << A_lim[n] << "\n"; 
+        
         ofs << n << "," << points << ","  
-            << fixed << setprecision(10) 
-            << E[n] << "," << Em[n] << "," << E_1_5[n] << "," 
-            << A[n] << "," << Am[n] << "," << A_1_5[n] << endl;
+            << fixed << setprecision(15) 
+            << E[n] << "," << Em[n] << "," << E_1_5[n] << "," << E_lim[n] << ","
+            << A[n] << "," << Am[n] << "," << A_1_5[n] << "," << A_lim[n] << endl;
+            
     }
 
     ofs.close();

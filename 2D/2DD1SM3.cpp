@@ -1,5 +1,6 @@
 // 2DD1SM3.cpp
 //Error simulation for 2DD1SM3 scheme
+// s(x) = 2 + min(max(-1, x), 4) and s'(x) = 1 if -1 <= x <= 4 else 0
 
 #include <Eigen/Dense>
 #include <algorithm>  

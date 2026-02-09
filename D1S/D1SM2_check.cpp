@@ -234,7 +234,7 @@ int main() {
         double B = 0.0, Bm = 0.0, B_1_5 = 0.0, Bb = 0.0;
 
         // OpenMP threadの並列化
-        #pragma omp parallel reduction(+:S, Sm, S_1_5, B, Bm, B_1_5, Sb, Bb)
+        #pragma omp parallel reduction(+:S, Sm, S_1_5, Sb,B, Bm, B_1_5, Bb)
         {
             // 各threadは独自の乱数生成器を持つ
             mt19937 rng(42);
@@ -254,7 +254,7 @@ int main() {
                     const double Z = dist(rng);
                     const double Z1 = dist(rng1);
                     const double dW = sqrt_dt * Z;
-                    const double dW1 = sqrt_dt * Z1;
+                    const double dW_prime = sqrt_dt * Z1;
           
                     
                     // 係数の計算
@@ -269,7 +269,7 @@ int main() {
                     W_state_Y = A0(W_state, coef_em, dt, Z);
                     W_state1_Y = A1(W_state1, coef_m, dt, Z);
                     W_state2_Y = A2(W_state2, coef_1_5, dt, Z);
-                    X_b_Y = benchmark(X_b, dt, dW, dW1, b, a);
+                    X_b_Y = benchmark(X_b, dt, dW, dW_prime, b, a);
 
                     delta_W  = delta_1(coef_em.sigma_deriv, coef_em.sigma, 
                                                    dt, W_state, W_state_Y, coef_em.drift);

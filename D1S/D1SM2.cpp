@@ -252,9 +252,7 @@ int main() {
                     const double Z1 = dist(rng1);
                     const double dW = sqrt_dt * Z;
                     const double dW_prime = sqrt_dt * Z1;
-                    const double Z_sq = Z * Z;
-                    const double Z_sq_minus_1 = Z_sq - 1.0;
-                    const double Z_cube_minus_3Z = Z * (Z_sq - 3.0);
+           
                     
                     // 係数の計算
                     StateCoeff coef_em, coef_m, coef_1_5, coef_X_b;
@@ -265,7 +263,7 @@ int main() {
 
                     
                     // 状態の更新
-                    W_state_Y = A0(W_state, coef_em, dt, dW);
+                    W_state_Y = A0(W_state, coef_em, dt, Z);
                     W_state1_Y = A1(W_state1, coef_m, dt, Z);
                     W_state2_Y = A2(W_state2, coef_1_5, dt, Z);
                     X_b_Y = benchmark(X_b, dt, dW, dW_prime, b, a);
