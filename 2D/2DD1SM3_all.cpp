@@ -40,34 +40,34 @@ inline double compute_sum_state(double delta_val,double delta_val_sq) {
     return delta_val - 0.5 * delta_val_sq;  
 }
 
-// // s(x) = 2 + sin(x)
-// inline double s_func(double x) { return 2.0 + sin(x); }
+// s(x) = 2 + sin(x)
+inline double s_func(double x) { return 2.0 + sin(x); }
 
-// // s'(x) = cos(x)
-// inline double ds_func(double x) { return cos(x); }
+// s'(x) = cos(x)
+inline double ds_func(double x) { return cos(x); }
 
-// // s''(x) = 0 (Approximation kept from original code)
+// s''(x) = -sin(x) (Approximation kept from original code)
+inline double dds_func(double x) { return -sin(x); }
+
+// // Clipping function
+// inline double f_clip(double x) {
+//     double min_val = -1.0, max_val = 4.0;
+//     return min(max_val, max(x, min_val));
+// }
+
+// // s(x) = 2 + min(max(x,-1),4)
+// inline double s_func(double x) { return 2.0 + f_clip(x); }
+// // s'(x) = 1 if -1 <= x <= 4 else 0
+// inline double ds_func(double x) {
+//     if (x >= -1.0 && x <= 4.0) {
+//         return 1.0;
+//     } else {
+//         return 0.0;
+//     }
+// }
+
+// // s''(x) = 0
 // inline double dds_func(double x) { return 0.0; }
-
-// Clipping function
-inline double f_clip(double x) {
-    double min_val = -1.0, max_val = 4.0;
-    return min(max_val, max(x, min_val));
-}
-
-// s(x) = 2 + min(max(x,-1),4)
-inline double s_func(double x) { return 2.0 + f_clip(x); }
-// s'(x) = 1 if -1 <= x <= 4 else 0
-inline double ds_func(double x) {
-    if (x >= -1.0 && x <= 4.0) {
-        return 1.0;
-    } else {
-        return 0.0;
-    }
-}
-
-// s''(x) = 0
-inline double dds_func(double x) { return 0.0; }
 
 
 // ========================================
@@ -241,8 +241,8 @@ inline State A2(const State& curr, double dt, double Z1, double Z2) {
     next(1) += 0.5 * ds0 * s1 * w1 * w2;
     next(1) += 0.5 * dt * (-s1 * w1 + ds0 * a(0) * w2);
 
-    double term2_t8_1 = 2.0 * dds0 * s1 * s1 * w1;
-    double term2_t8_2 = ds0 * s1 * ds0 * s1 * w1/ s0;
+    double term2_t8_1 = 2.0 * dds0 * s1 * s1 * w2;
+    double term2_t8_2 = ds0 * s1 * ds0 * s1 * w2 / s0;
     double term2_t8_3 = -ds1 * ds0 * s0 * w1;
     next(1) += 0.125 * dt * (term2_t8_1 + term2_t8_2 + term2_t8_3);
 
@@ -284,7 +284,7 @@ int main() {
 
     const string dir_path = "../data_source";
     system(("mkdir -p " + dir_path).c_str()); 
-    const string csv_path = dir_path + "/2DD1SM3_all_min_max_100_1000_data.csv"; // or "_min_max_100_1000_data.csv" for min-max option
+    const string csv_path = dir_path + "/2DD1SM3_all_s2sin_100_1000_data.csv"; // or "_min_max_100_1000_data.csv" for min-max option
     ofstream ofs(csv_path, ios::out | ios::trunc);
     
     if (!ofs) {
@@ -330,7 +330,7 @@ int main() {
                 double D_nm = 0.0, D_nm_sq = 0.0;
                 
                 // Variable for the Limit Simulation Z
-                double I_T = 0.0;
+                double I_T = 0.0, I_T_inner = 0.0;
                 double sum_A0 = 0.0, sum_A1 = 0.0, sum_A2 = 0.0, sum_nm = 0.0;
                 
                 for (int idx = 1; idx < points; ++idx) {
@@ -347,7 +347,7 @@ int main() {
                         double Z_tilde = dist(rng_lim);
 
                         // Compute Limit Integral Term
-                        // Formula: sqrt(3/2) * Integral( sqrt( (s'(x1)/s(x1) * s(x2))^2 + (s'(x2)/s(x2) * s(x1))^2 ) dW~ )
+                        // Formula: sqrt(3/2) * Integral( sqrt( (s'(x1)/s(x1) * s(x2))^2 + (s'(x2)/s(x2) * s(x1))^2 ) dW_tilde )
                         double x1 = st_nm(0);
                         double x2 = st_nm(1);
                         double s1 = s_func(x1);
@@ -365,6 +365,7 @@ int main() {
                         
                         // Update I^0_T = I^0_T + sqrt(3/2) * integrand * Z_tilde * sqrt(dtm)
                         I_T += sqrt(1.5) * integrand * Z_tilde * sqrt_dtm;
+                        I_T_inner += 1.5 * integrand * integrand * dtm;
 
                         // Update Benchmark State
                         State nm_benchmark = A1(st_nm, dtm, Z1_nm, Z2_nm);
@@ -394,20 +395,25 @@ int main() {
                     st_mil = next_mil;
                     st_15  = next_15;
                 }
-                
                 sum_A0 = compute_sum_state(D_A0, D_A0_sq);
                 sum_A1 = compute_sum_state(D_A1, D_A1_sq);
                 sum_A2 = compute_sum_state(D_A2, D_A2_sq);
                 sum_nm = compute_sum_state(D_nm, D_nm_sq);
 
+                // Update States for Limition iteration
+                double computed_I_T = exp(-I_T - 0.5 * I_T_inner) - 1.0; 
+
+                //absolute value for the computed_I_T
+                double abs_computed_I_T = fabs(computed_I_T);
+
                 S += sgn(sum_A0) - sgn(sum_nm);
                 Sm += sgn(sum_A1) - sgn(sum_nm);
                 S_1_5 += sgn(sum_A2) - sgn(sum_nm);
-                S_lim += I_T;
+                S_lim += abs_computed_I_T;
                 B += (sgn(sum_A0) - sgn(sum_nm)) * (sgn(sum_A0) - sgn(sum_nm));
                 Bm += (sgn(sum_A1) - sgn(sum_nm)) * (sgn(sum_A1) - sgn(sum_nm));
                 B_1_5 += (sgn(sum_A2) - sgn(sum_nm)) * (sgn(sum_A2) - sgn(sum_nm));
-                B_lim += I_T * I_T;
+                B_lim += abs_computed_I_T * abs_computed_I_T;
                 
                 
                 

@@ -225,7 +225,7 @@ int main() {
 
 
                 }
-
+                
                 // 指数項の計算
                 double inner_b = exp(-I_W_stateb - 0.5 * I_quad_W_stateb) - 1.0;
 

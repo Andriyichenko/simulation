@@ -354,8 +354,8 @@ inline State A2(const State& curr, double dt, double Z1, double Z2) {
     next(1) += 0.5 * ds0 * s1 * w1 * w2;
     next(1) += 0.5 * dt * (-s1 * w1 + ds0 * a(0) * w2);
 
-    double term2_t8_1 = 2.0 * dds0 * s1 * s1 * w1;
-    double term2_t8_2 = ds0 * s1 * ds0 * s1 * w1/ s0;
+    double term2_t8_1 = 2.0 * dds0 * s1 * s1 * w2;
+    double term2_t8_2 = ds0 * s1 * ds0 * s1 * w2 / s0;
     double term2_t8_3 = -ds1 * ds0 * s0 * w1;
     next(1) += 0.125 * dt * (term2_t8_1 + term2_t8_2 + term2_t8_3);
 
@@ -393,7 +393,7 @@ int main() {
 
     const string dir_path = "../data_source";
     system(("mkdir -p " + dir_path).c_str()); 
-    const string csv_path = dir_path + "/TEST_2DD1SM3_check_nobm_nodt_s2sin_100_1000_data.csv"; 
+    const string csv_path = dir_path + "/2DD1SM3_check_nobm_nodt_s2sin_100_1000_data.csv"; 
     ofstream ofs(csv_path, ios::out | ios::trunc);
     
     if (!ofs) {
