@@ -1,6 +1,6 @@
 // 2DD1SM3_lim.cpp
 // Limit Simulation only (I_T^0)
-
+// s(x) = 2 + sin(x)
 #include <Eigen/Dense>
 #include <cmath>
 #include <fstream>

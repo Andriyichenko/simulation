@@ -1,4 +1,5 @@
 // 2DD2SM3_check.cpp
+// s(x) = 2 + sin(x)
 
 #include <Eigen/Dense>
 #include <algorithm>  
@@ -54,23 +55,19 @@ inline double f(double L) {
 }
 
 // Clipping function
-inline double f_clip(double x) {
-    double min_val = -1.0, max_val = 4.0;
-    return min(max_val, max(x, min_val));
-}
+// inline double f_clip(double x) {
+//     double min_val = -1.0, max_val = 4.0;
+//     return min(max_val, max(x, min_val));
+// }
 
 
 
 
-// s(x) = 2 + min(max(-1, x), 4)
-inline double s_func(double x) { return 2.0 + f_clip(x); }
-// s'(x) = 1 if -1 <= x <= 4 else 0
+// s(x) = 2 + sin(x)
+inline double s_func(double x) { return 2.0 + sin(x); }
+// s'(x) = cos(x)
 inline double ds_func(double x) {
-    if (x >= -1.0 && x <= 4.0) {
-        return 1.0;
-    } else {
-        return 0.0;
-    }
+    return cos(x);
 }
 
 // inline double s_func(double x) { return 1.0; }
@@ -399,7 +396,7 @@ int main() {
 
     const string dir_path = "../data_source";
     system(("mkdir -p " + dir_path).c_str()); 
-    const string csv_path = dir_path + "/2DD2SM3_check_nodt_100_1000_data.csv"; 
+    const string csv_path = dir_path + "/2DD2SM3_check_nodt_s2sin_100_1000_data.csv"; 
     ofstream ofs(csv_path, ios::out | ios::trunc);
     
     if (!ofs) {

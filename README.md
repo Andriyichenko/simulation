@@ -117,6 +117,15 @@ The files in the `data_source/` directory follow a naming convention that links 
     *   This is the specific drift term used in Model 3's 2-dimensional setting.
     *   Files with this suffix correspond to simulations where this particular drift configuration is applied.
 
+*   **`_s2sin` suffix** (e.g., `2DD1SM3_check_s2sin_100_1000_data.csv`):
+    *   Indicates that the dataset was generated from simulations using the specific diffusion coefficient function $s(x) = 2 + \sin(x)$.
+    *   This particular choice of $s(x)$ is used in the simulation models, particularly in Model 3's 2-dimensional setting.
+
+*   **`_min_max` suffix** (e.g., `2DD1SM3_check_min_max_100_1000_data.csv`):
+    *   Indicates that the dataset was generated from simulations using the specific diffusion coefficient function $s(x) = 2 + \min(\max(-1,x),4)$, instead of $s(x) = 2 + \sin(x)$.
+    *   This particular choice of $s(x)$ is used in the simulation models, where the function is bounded between specific limits.
+  
+
 
 ---
 
@@ -630,6 +639,27 @@ This module contains the detailed mathematical derivations for the higher-order 
 
 This project is developed using **Visual Studio Code** IDE.
 
+### Eigen Library
+**Directory:** `eigen/`
+
+This project uses the **Eigen** library (version 3.4.0) for high-performance linear algebra operations and matrix computations.
+
+*   **What is Eigen**: Eigen is a C++ template library for linear algebra, including matrices, vectors, numerical solvers, and related algorithms. It is a header-only library, meaning no compilation or installation is required.
+*   **Location**: The Eigen library is located in the `eigen/eigen-3.4.0/` directory of this project.
+*   **Usage in C++ Code**: 
+    *   Include Eigen headers in your C++ files: `#include <Eigen/Dense>`, `#include <Eigen/Core>`, etc.
+    *   The library provides high-level matrix and vector classes such as `Eigen::VectorXd`, `Eigen::MatrixXd`, and various decomposition methods.
+    *   Common operations used in this project include matrix operations, random number generation (`Eigen::VectorXd::Random()`), and vector arithmetic.
+*   **Compilation Setup**:
+    *   The include path to Eigen must be specified during compilation: `-I/path/to/eigen/eigen-3.4.0`
+    *   In this project, the Eigen include path is configured in `.vscode/c_cpp_properties.json` for IntelliSense and in the Code Runner settings for compilation.
+    *   Example compilation command: `g++ -I./eigen/eigen-3.4.0 -fopenmp -O3 -o output_file source_file.cpp`
+
+*   **Key Features Used**:
+    *   **Matrix and Vector Operations**: Efficient matrix-vector multiplications, element-wise operations
+    *   **Random Number Generation**: `Eigen::VectorXd::Random()` for generating random Brownian motion increments
+    *   **Performance**: Eigen is optimized for speed and uses expression templates to avoid unnecessary temporary objects
+
 ### Compilation & Execution
 To compile and run the C++ simulations, we recommend using the **Code Runner** extension.
 
@@ -637,5 +667,6 @@ To compile and run the C++ simulations, we recommend using the **Code Runner** e
 *   **Configuration**:
     *   Essential configuration settings, including include paths for **Eigen** and **OpenMP**, are defined in `.vscode/c_cpp_properties.json` and `.vscode/settings.json`.
     *   These settings are **mandatory** for successful compilation, as they specify the necessary compiler flags and library paths.
+    *   The Eigen include path (e.g., `./eigen/eigen-3.4.0`) must be added to the compiler's include search path.
 
 Please refer to the `.vscode/` directory for specific include paths and environment settings.
