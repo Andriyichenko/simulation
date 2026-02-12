@@ -173,15 +173,8 @@ int main() {
         const double dt = (t_end - t_start) / (points - 1);
         const double sqrt_dt = sqrt(dt);
         const double dt_sqrt_dt = dt * sqrt_dt;
-
-        
-
         // パラメータ初期化
         double Sb = 0.0, Bb = 0.0;
-
-
-    
-
 
         // OpenMP threadの並列化
         #pragma omp parallel reduction(+:Sb, Bb)
@@ -225,7 +218,7 @@ int main() {
 
 
                 }
-                
+
                 // 指数項の計算
                 double inner_b = exp(-I_W_stateb - 0.5 * I_quad_W_stateb) - 1.0;
 

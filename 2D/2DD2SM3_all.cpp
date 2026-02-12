@@ -314,7 +314,7 @@ int main() {
     constexpr double sigma = 1.0;
     
     const State x0_state = Vector2d(1, 1); //X_start
-    constexpr int max_n = 9;
+    constexpr int max_n = 2;
 
     vector<double> A(max_n + 1, 0.0);
     vector<double> Am(max_n + 1, 0.0);
@@ -328,7 +328,7 @@ int main() {
 
     const string dir_path = "../data_source";
     system(("mkdir -p " + dir_path).c_str()); 
-    const string csv_path = dir_path + "/2DD2SM3_all_s2sin_100_1000_data.csv"; // or "_min_max_100_1000_data.csv" for min-max option
+    const string csv_path = dir_path + "/TEST_2DD2SM3_all_s2sin_100_1000_data.csv"; // or "_min_max_100_1000_data.csv" for min-max option
     ofstream ofs(csv_path, ios::out | ios::trunc);
     
     if (!ofs) {
@@ -340,8 +340,8 @@ int main() {
     ofs << "n,points,E,Em,E_1.5,E_lim,A,Am,A_1.5,A_lim\n";
 
     for (int n = 0; n <= max_n; ++n) {
-        const int points = 100 + 100 * n; 
-        const int paths = 10 * points * points;
+        const int points = 50 + 1 * n; 
+        const int paths = 1 * points * points;
         
         const double dt = (t_end - t_start) / (points - 1);
         const double dtm = dt / (points - 1);
@@ -501,9 +501,9 @@ int main() {
                 sum_nm = D_benchmark;
 
                 // Accumulate Expectation
-                S += (sgn(sum_A0) - sgn(sum_nm)) / sqrt(dt);
-                Sm += (sgn(sum_A1) - sgn(sum_nm)) / sqrt(dt);
-                S_1_5 += (sgn(sum_A2) - sgn(sum_nm)) / sqrt(dt);
+                S += (sgn(sum_nm) - sgn(sum_A0)) / sqrt(dt);
+                Sm += (sgn(sum_nm) - sgn(sum_A1)) / sqrt(dt);
+                S_1_5 += (sgn(sum_nm) - sgn(sum_A2)) / sqrt(dt);
                 
                 // Accumulate Variance
                 B += (sgn(sum_A0) - sgn(sum_nm)) * (sgn(sum_A0) - sgn(sum_nm)) / dt;

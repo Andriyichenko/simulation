@@ -269,7 +269,7 @@ int main() {
     constexpr double sigma = 1.0;
     
     const State x0_state = Vector2d(1, 1); //X_start
-    constexpr int max_n = 9;
+    constexpr int max_n = 3;
 
     vector<double> A(max_n + 1, 0.0);
     vector<double> Am(max_n + 1, 0.0);
@@ -300,15 +300,15 @@ int main() {
         const int paths = 10 * points * points;
         
         const double dt = (t_end - t_start) / (points - 1);
-        const double dtm = dt / (points - 1);
+        const double dtm = dt / (points - 1); 
         const double sqrt_dtm = sqrt(dtm);
         const double sqrt_dt = sqrt(dt);
 
         double S = 0.0, Sm = 0.0, S_1_5 = 0.0,S_lim = 0.0;
         double B = 0.0, Bm = 0.0, B_1_5 = 0.0,B_lim = 0.0;
         
-        #pragma omp parallel reduction(+:S,Sm,S_1_5,S_lim,B,Bm,B_1_5,B_lim) 
-        {
+        // #pragma omp parallel reduction(+:S,Sm,S_1_5,S_lim,B,Bm,B_1_5,B_lim) 
+        // {
             mt19937 rng_nm(40);
             mt19937 rng1_nm(50);
             
@@ -317,7 +317,7 @@ int main() {
 
             normal_distribution<double> dist(mu, sigma);
          
-            #pragma omp for schedule(static) nowait
+            // #pragma omp for schedule(static) nowait
             for (int p = 0; p < paths; ++p) {
 
                 State st_em  = x0_state;
@@ -406,9 +406,9 @@ int main() {
                 //absolute value for the computed_I_T
                 double abs_computed_I_T = fabs(computed_I_T);
 
-                S += sgn(sum_A0) - sgn(sum_nm);
-                Sm += sgn(sum_A1) - sgn(sum_nm);
-                S_1_5 += sgn(sum_A2) - sgn(sum_nm);
+                S += sgn(sum_nm) - sgn(sum_A0) ;
+                Sm += sgn(sum_nm) - sgn(sum_A1) ;
+                S_1_5 += sgn(sum_nm) - sgn(sum_A2) ;
                 S_lim += abs_computed_I_T;
                 B += (sgn(sum_A0) - sgn(sum_nm)) * (sgn(sum_A0) - sgn(sum_nm));
                 Bm += (sgn(sum_A1) - sgn(sum_nm)) * (sgn(sum_A1) - sgn(sum_nm));
@@ -419,7 +419,7 @@ int main() {
                 
 
             }
-       } // End of parallel region
+       //} // End of parallel region
 
        // Compute Means and Variances
        //calculate inverse of paths 
