@@ -269,7 +269,7 @@ int main() {
     constexpr double sigma = 1.0;
     
     const State x0_state = Vector2d(1, 1); //X_start
-    constexpr int max_n = 3;
+    constexpr int max_n = 9;
 
     vector<double> A(max_n + 1, 0.0);
     vector<double> Am(max_n + 1, 0.0);
@@ -284,7 +284,7 @@ int main() {
 
     const string dir_path = "../data_source";
     system(("mkdir -p " + dir_path).c_str()); 
-    const string csv_path = dir_path + "/2DD1SM3_all_s2sin_100_1000_data.csv"; // or "_min_max_100_1000_data.csv" for min-max option
+    const string csv_path = dir_path + "/TEST_2DD1SM3_all_s2sin_100_1000_data.csv"; // or "_min_max_100_1000_data.csv" for min-max option
     ofstream ofs(csv_path, ios::out | ios::trunc);
     
     if (!ofs) {
@@ -364,8 +364,8 @@ int main() {
                         double integrand = sqrt(term1 * term1 + term2 * term2);
                         
                         // Update I^0_T = I^0_T + sqrt(3/2) * integrand * Z_tilde * sqrt(dtm)
-                        I_T += sqrt(1.5) * integrand * Z_tilde * sqrt_dtm;
-                        I_T_inner += 1.5 * integrand * integrand * dtm;
+                        I_T += sqrt(0.5) * integrand * Z_tilde * sqrt_dtm;
+                        I_T_inner += 0.5 * integrand * integrand * dtm;
 
                         // Update Benchmark State
                         State nm_benchmark = A1(st_nm, dtm, Z1_nm, Z2_nm);
