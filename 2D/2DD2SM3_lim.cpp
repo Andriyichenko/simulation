@@ -1,5 +1,5 @@
 // 2DD2SM3_lim.cpp
-// Limit Simulation I_T^1 only 
+// Limit Simulation I_T^1 only (OLD one)
 
 #include <Eigen/Dense>
 #include <cmath>
@@ -57,7 +57,7 @@ int main() {
 
     const string dir_path = "../data_source";
     system(("mkdir -p " + dir_path).c_str());
-    const string csv_path = dir_path + "/2DD2SM3_lim_data.csv";
+    const string csv_path = dir_path + "/2DD2SM3_lim2_data.csv";
     ofstream ofs(csv_path, ios::out | ios::trunc);
 
     if (!ofs) {
@@ -132,7 +132,8 @@ int main() {
                         double term22_4 = 0.125 * (ds1 * s2) * (ds1 * s2) / (s1 * s1);
                         double c2_22 = term22_2 + term22_3 + term22_4;
 
-                        double Sum_m2 = 2.0 * (pow(c2_11, 2) + pow(c2_22, 2) + 2.0 * pow(c2_12, 2));
+                        //double Sum_m2 = 2.0 * (pow(c2_11, 2) + pow(c2_22, 2) + 2.0 * pow(c2_12, 2));
+                        double Sum_m2 = 2.0 * (pow(c2_11, 2) + pow(c2_22, 2) + 0.5 * pow(c2_12, 2));
 
                         // m=4 coefficients
                         double c2_1111 = (1.0 / 24.0) * (pow(ds2, 2) * pow(s1, 2)) / pow(s2, 2);
@@ -147,10 +148,15 @@ int main() {
                         double term1122_4 = (1.0 / 24.0) * pow(ds1, 2) * (pow(s2, 2) / pow(s1, 2));
                         double c2_1122 = term1122_1 + term1122_2 + term1122_3 + term1122_4;
 
-                        double sum_c4_sq = pow(c2_1111, 2) + pow(c2_2222, 2)
-                                         + 4.0 * pow(c2_1112, 2)
-                                         + 4.0 * pow(c2_1222, 2)
-                                         + 6.0 * pow(c2_1122, 2);
+                        // double sum_c4_sq = pow(c2_1111, 2) + pow(c2_2222, 2)
+                        //                  + 4.0 * pow(c2_1112, 2)
+                        //                  + 4.0 * pow(c2_1222, 2)
+                        //                  + 6.0 * pow(c2_1122, 2);
+
+                        double sum_c4_sq = 24*pow(c2_1111, 2) + 24*pow(c2_2222, 2)
+                                         + 6.0 * pow(c2_1112, 2)
+                                         + 6.0 * pow(c2_1222, 2)
+                                         + 4.0 * pow(c2_1122, 2);
 
                         double Sum_m4 = 24.0 * sum_c4_sq;
 
@@ -166,7 +172,7 @@ int main() {
                     st_nm_y = st_nm;
                 }
 
-                S_lim += Z_limit;
+                S_lim += fabs(Z_limit);
                 B_lim += Z_limit * Z_limit;
             }
         }
@@ -183,7 +189,7 @@ int main() {
 
         ofs << n << "," << points << ","
             << fixed << setprecision(15)
-            << E_lim[n] << "," << A_lim[n] << "\n";
+            << E_lim[n] << "," << A_lim[n] << endl;
     }
 
     ofs.close();
