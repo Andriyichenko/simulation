@@ -181,14 +181,14 @@ int main() {
 
     // 定数の定義
     constexpr double t_start = 0.0;
-    constexpr double t_end = 1.0;
+    constexpr double t_end = 0.5;
     constexpr double mu = 0.0;
-    constexpr double sigma = 1.0;
+    constexpr double sigma = 0.5;
     constexpr double b = 0.5;
-    constexpr double a = -0.5;
+    constexpr double a = -1.2;
     constexpr double b_sq = b * b;          
     constexpr double b_quad = b_sq * b_sq;
-    constexpr double x_0 = 0.8;
+    constexpr double x_0 = 0.5;
     constexpr int max_n = 9;
     
 
@@ -206,7 +206,7 @@ int main() {
     // CSV ファイル名の設定
     const string dir_path = "../data_source";
     system(("mkdir -p " + dir_path).c_str()); //フォルダーの確認 
-    const string csv_path = dir_path + "/D1SM2_all_100_1000_data.csv"; //data sourceのファイル名指定
+    const string csv_path = dir_path + "/TEST_D1SM2_all_100_1000_data.csv"; //data sourceのファイル名指定
     ofstream ofs(csv_path, ios::out | ios::trunc);
     
     if (!ofs) {
@@ -220,7 +220,7 @@ int main() {
     // 時間ステップ数のループ
     for (int n = 0; n <= max_n; ++n) {
         const int points = 100 + 100 * n; //(10-50-100-200-400-600-800-1000)
-        const int paths = 100 * points * points;
+        const int paths = 10 * points * points;
         
         const double dt = (t_end - t_start) / (points - 1);
         const double sqrt_dt = sqrt(dt);
@@ -308,13 +308,13 @@ int main() {
 
                 // 絶対値の計算
                 const double abs_inner_b = fabs(inner_b);
-                S  += (sgn(dX_b) - sgn(dX0)) / sqrt(dt);       
-                Sm += (sgn(dX_b) - sgn(dX1)) / sqrt(dt);      
-                S_1_5 += (sgn(dX_b) - sgn(dX2)) / sqrt(dt); 
+                S  += (sgn(dX_b) - sgn(dX0));       
+                Sm += (sgn(dX_b) - sgn(dX1));      
+                S_1_5 += (sgn(dX_b) - sgn(dX2)); 
                 Sb += abs_inner_b;
-                B += (sgn(dX0)-sgn(dX_b))*(sgn(dX0)-sgn(dX_b)) / dt;        
-                Bm += (sgn(dX1)-sgn(dX_b))*(sgn(dX1)-sgn(dX_b)) / dt;     
-                B_1_5 += (sgn(dX2)-sgn(dX_b))*(sgn(dX2)-sgn(dX_b)) / dt;  
+                B += (sgn(dX0)-sgn(dX_b))*(sgn(dX0)-sgn(dX_b));        
+                Bm += (sgn(dX1)-sgn(dX_b))*(sgn(dX1)-sgn(dX_b));     
+                B_1_5 += (sgn(dX2)-sgn(dX_b))*(sgn(dX2)-sgn(dX_b));  
                 Bb += abs_inner_b * abs_inner_b;
            
         } // end of parallel region
