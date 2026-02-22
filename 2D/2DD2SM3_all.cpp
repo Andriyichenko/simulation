@@ -161,9 +161,9 @@ inline double Sigma1(const State& x) {
     const double term2 = 0.5 * B * B;
     const double term3 = 0.25 * C * C;
 
-    const double term4 = (1.0 / 24.0) * pow(s1 * sp2, 4) / pow(s2, 4);
-    const double term5 = (1.0 / 24.0) * pow(s2 * sp1, 4) / pow(s1, 4);
-    const double term6 = (1.0 / 12.0) * pow(sp1 * sp2, 2);
+    const double term4 = (1.0 / 48.0) * pow(s1 * sp2, 4) / pow(s2, 4);// 1/24
+    const double term5 = (1.0 / 48.0) * pow(s2 * sp1, 4) / pow(s1, 4); //1/24
+    const double term6 = (3.0 / 32.0) * pow(sp1 * sp2, 2); //1/12
     const double term7 = (1.0 / 9.0)  * D * D;
 
     return term1 + term2 + term3 + term4 + term5 + term6 + term7;

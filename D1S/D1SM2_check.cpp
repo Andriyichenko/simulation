@@ -30,9 +30,10 @@ inline double delta_1(double sigma_prime, double sigma, double dt,
     const double sigma_inv = 1.0 / sigma;
     const double diff_sigma_inv = diff * sigma_inv;
     const double diff_sq = diff * diff;
-    
-    
-    const double A = diff_sq * diff * sigma_inv * sigma_inv * sigma_inv * dt;
+    const double dt_inv = 1.0 / dt;
+
+
+    const double A = diff_sq * diff * sigma_inv * sigma_inv * sigma_inv * dt_inv;
     const double B = diff_sigma_inv;
     
     return 0.5 * sigma_prime * (A - 3.0 * B);
@@ -246,8 +247,8 @@ int main() {
                 // 変数の初期化
                 double W_state = x_0, W_state1 = x_0, W_state2 = x_0;
                 double X_b = x_0,X_b_Y=x_0,W_state_Y=x_0,W_state1_Y=x_0,W_state2_Y=x_0;
-                    double dX0 = 0.0, dX_b = 0.0, dX1 = 0.0, dX2 = 0.0;
-                    double delta_W = 0.0, delta_W1 = 0.0, delta_W2 = 0.0, delta_Xb = 0.0;
+                double dX0 = 0.0, dX_b = 0.0, dX1 = 0.0, dX2 = 0.0;
+                double delta_W = 0.0, delta_W1 = 0.0, delta_W2 = 0.0, delta_Xb = 0.0;
                 
                 for (int idx = 1; idx < points; ++idx) {
                     // ランダム数の生成

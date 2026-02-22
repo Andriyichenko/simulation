@@ -303,9 +303,9 @@ int main() {
                 
 
                 // Expectation Accumulation
-                S += val_em - val_nm;
-                Sm += val_mil - val_nm;
-                S_1_5 += val_15 - val_nm;
+                S += val_nm - val_em;
+                Sm += val_nm - val_mil;
+                S_1_5 += val_nm - val_15;
 
                 // Variance Accumulation
                 B += (val_em - val_nm) * (val_em - val_nm);

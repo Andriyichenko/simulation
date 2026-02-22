@@ -28,15 +28,17 @@ constexpr int sgn(double x) {
     return (x > 0.0) - (x < 0.0);
 }
 
-// delta_1(t,x,y) の定義
+// delta_1(t,x,y) の定義　
 inline double delta_1(double sigma_prime, double sigma, double dt, 
                       double x, double y, double mu) {
     const double diff = y - x - mu * dt;
     const double sigma_inv = 1.0 / sigma;
     const double diff_sigma_inv = diff * sigma_inv;
     const double diff_sq = diff * diff;
-    
-    const double A = diff_sq * diff * sigma_inv * sigma_inv * sigma_inv * dt;
+    const double dt_inv = 1.0 / dt;
+
+
+    const double A = diff_sq * diff * sigma_inv * sigma_inv * sigma_inv * dt_inv;
     const double B = diff_sigma_inv;
     
     return 0.5 * sigma_prime * (A - 3.0 * B);
