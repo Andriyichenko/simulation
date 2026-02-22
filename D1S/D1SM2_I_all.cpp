@@ -23,7 +23,7 @@ constexpr int sgn(double x) {
     return (x > 0.0) - (x < 0.0);
 }
 
-// delta_1(t,x,y) の定義　順番直し
+// delta_1(t,x,y) の定義　
 inline double delta_1(double sigma_prime, double sigma, double dt, 
                       double x, double y, double mu) {
     const double diff = y - x - mu * dt;
