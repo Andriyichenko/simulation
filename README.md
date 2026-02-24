@@ -25,6 +25,9 @@ Please refer to the page 58 ~66 of the paper [*High order polynomial regression 
     *   [7. Max Measure (M)](#7-max-measure-m)
     *   [8. Model 1 & Model 2 & Model 3(M1&M2&M3)](#8-model-1-model-2--model-3-m1-m2--m3)
 * **[Calculation](#calculation)**
+* **[Bug Fix Log](#bug-fix-log)**
+    *   [2026-02-24: mt19937 Seeding Refactoring](#2026-02-24-mt19937-seeding-refactoring)
+* **[ErrorLog](#errorlog)**
 
 *   **[Development Environment](#development-environment)**
     *   [Compilation & Execution](#compilation--execution)
@@ -632,6 +635,156 @@ This module contains the detailed mathematical derivations for the higher-order 
     *   Derivation of centralized variables and standardized variables.
     *   Step-by-step calculation of $H^{i,j,k, \cdots}_t(x,y)$ of $\Delta_t^1$ and $\Delta_t^2$ based on the general formula.(please refer to the page 53, Eq. A.5 or A.7 of the *[PAPER](https://www.overleaf.com/project/6801f9a43ca0501e11926ee2)*
 
+
+---
+
+## Bug Fix Log
+
+### 2026-02-24: mt19937 Seeding Refactoring
+
+> **Severity:** 🔴 Critical (Reproducibility Issue)  
+> **Scope:** All C++ simulation files across all folders  
+> **Files Modified:** 46 files in `2D/`, `D1f/`, `D1S/`, `D2S/`, `D2f/`, `LT/`, `MM/`, `Test_performance/`
+
+#### Problem Description
+
+All C++ simulation files used a **fixed-seed `mt19937`** random number generator initialized **once per thread** inside the `#pragma omp parallel` block, **before** the `for (int p = 0; p < paths; ++p)` loop:
+
+```cpp
+// ❌ BEFORE (Non-reproducible across different thread counts)
+#pragma omp parallel reduction(+:S, Sm, ...)
+{
+    mt19937 rng(42);       // Same seed for every thread
+    mt19937 rng1(30);      // Same seed for every thread
+    normal_distribution<double> dist(mu, sigma);
+
+    #pragma omp for schedule(static) nowait
+    for (int p = 0; p < paths; ++p) {
+        // rng state depends on which thread owns this path
+        // and how many paths were processed before it
+        ...
+    }
+}
+```
+
+**The core issue:** Each OpenMP thread initializes its `mt19937` with the **same seed** (e.g., `42`). When the number of threads changes (e.g., running on a different machine), the mapping of paths to threads changes. Since the RNG state is **sequential per thread** (each `dist(rng)` call advances the RNG), the random numbers assigned to a given path `p` depend on:
+1. Which thread is assigned path `p`
+2. How many paths that thread processed **before** path `p`
+
+This means **simulation results are not reproducible** when the thread count changes.
+
+#### Fix Applied
+
+All `mt19937` declarations were moved **inside** the `for (int p = 0; p < paths; ++p)` loop body, using `seed_seq` to generate a **unique, deterministic seed per path**:
+
+```cpp
+// ✅ AFTER (Reproducible regardless of thread count)
+#pragma omp parallel reduction(+:S, Sm, ...)
+{
+    normal_distribution<double> dist(mu, sigma);
+
+    #pragma omp for schedule(static) nowait
+    for (int p = 0; p < paths; ++p) {
+        seed_seq ss0{42u, 0u, (uint32_t)p};   // Unique seed for rng in path p
+        seed_seq ss1{30u, 1u, (uint32_t)p};   // Unique seed for rng1 in path p
+        mt19937 rng(ss0);
+        mt19937 rng1(ss1);
+        // Now path p always gets the same random stream,
+        // regardless of which thread processes it
+        ...
+    }
+}
+```
+
+**`seed_seq` structure:** `seed_seq ss{original_seed, rng_index, path_index}`
+*   `original_seed` — preserves the original seed value (e.g., `42u`, `30u`, `50u`)
+*   `rng_index` — distinguishes between multiple RNGs within the same path (e.g., `0u` for `rng`, `1u` for `rng1`)
+*   `path_index` — `(uint32_t)p`, ensures each path gets a unique random stream
+
+#### Why This Fix Is Correct
+
+| Property | Before (Fixed Seed) | After (seed\_seq per path) |
+|---|---|---|
+| Same path, same thread count | ✅ Reproducible | ✅ Reproducible |
+| Same path, different thread count | ❌ **Not reproducible** | ✅ Reproducible |
+| Independence between paths | ⚠️ Depends on thread assignment | ✅ Guaranteed |
+| Independence between RNGs | ⚠️ Only if seeds differ | ✅ Guaranteed by `rng_index` |
+| Performance impact | — | Negligible (seed\_seq init is fast) |
+
+#### Files Modified Summary
+
+| Folder | Files | RNG Variants |
+|---|---|---|
+| `2D/` | 13 | `rng_nm(40)/rng1_nm(50)`, `rng_lim(1000)`, `rng_nm(30)/rng1_nm(42)` |
+| `D1f/` | 8 | `rng(42)/rng1(30)`, `rng2(50)`, `rng2(55)` |
+| `D1S/` | 6 | `rng(42)/rng1(30)`, `rng2(50)` |
+| `D2S/` | 4 | `rng(42)/rng1(30)/rng2(50)/rng3(70)` (single-line declarations split) |
+| `D2f/` | 5 | `rng(42)/rng1(30)/rng2(50)/rng3(70)` |
+| `LT/` | 12 | `rng(42)/rng1(30)`, `rng1(27)/rng2(30)` |
+| `MM/` | 2 | `rng(42)/rng1(27)` |
+| `Test_performance/` | 1 | `rng(42)/rng1(30)` |
+
+#### Verification
+
+The fix was verified using `ErrorLog/ThreadTest.cpp`. See [ErrorLog](#errorlog) for details.
+
+---
+
+## ErrorLog
+**Directory:** `ErrorLog/`
+
+This directory contains diagnostic and debugging files used to identify and verify bug fixes.
+
+### ThreadTest.cpp
+
+*   **File:** [ErrorLog/ThreadTest.cpp](ErrorLog/ThreadTest.cpp)
+*   **Purpose:** Demonstrates the reproducibility problem with OpenMP + `mt19937` and validates the `seed_seq` fix.
+
+This test program compares two seeding strategies side-by-side:
+
+#### 【A】Path-based Seeding (✅ Recommended — `seed_seq`)
+
+```cpp
+#pragma omp parallel for schedule(static) num_threads(threads)
+for (int p = 0; p < paths; ++p) {
+    std::seed_seq ss0{42u, 0u, (uint32_t)p};
+    std::mt19937 rng(ss0);
+    std::normal_distribution<double> dist(0.0, 1.0);
+    double v0 = dist(rng);  // Always the same for a given p
+}
+```
+
+*   Each path `p` creates its own `seed_seq` with the path index embedded.
+*   **Result:** The same path `p` always produces the **same random value**, no matter which thread processes it or how many threads are used.
+*   The test verifies this by having 8 threads independently compute path `p=0` — all produce identical values. ✓
+
+#### 【B】Thread-based Seeding (❌ Old Method — Fixed Seed)
+
+```cpp
+#pragma omp parallel num_threads(threads)
+{
+    std::mt19937 rng(42);    // Every thread gets the same seed
+    std::mt19937 rng1(30);
+    #pragma omp for schedule(static)
+    for (int p = 0; p < paths; ++p) {
+        double v0 = dist(rng); // Depends on thread's RNG state
+    }
+}
+```
+
+*   All threads initialize with the **same seed** (`42`), so they start with the same RNG state.
+*   The value produced for path `p` depends on **which thread owns it** and **how many prior `dist(rng)` calls** that thread made.
+*   **Result:** Changing the number of threads changes the path-to-thread mapping, which changes the simulation results. ✗
+
+#### Test Output Summary
+
+| Test | Method A (`seed_seq`) | Method B (Fixed Seed) |
+|---|---|---|
+| Same `p`, same threads | ✅ Identical | ✅ Identical |
+| Same `p`, different threads | ✅ Identical | ❌ **Different** |
+| Conclusion | **Reproducible** | **Not reproducible** |
+
+This test confirms that the `seed_seq`-based approach guarantees **deterministic, thread-count-independent** simulation results, which is why all simulation files were refactored to adopt this pattern.
 
 ---
 

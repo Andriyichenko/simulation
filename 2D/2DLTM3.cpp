@@ -241,14 +241,14 @@ int main() {
         // OpenMP threadの並列化
         #pragma omp parallel reduction(+:S,Sm,S_1_5,B,Bm,B_1_5) 
         {
-            mt19937 rng_nm(30); 
-            mt19937 rng1_nm(42);
-
-           
             normal_distribution<double> dist(mu, sigma);
          
             #pragma omp for schedule(static) nowait
             for (int p = 0; p < paths; ++p) {
+                seed_seq ss0{30u, 0u, (uint32_t)p};
+                seed_seq ss1{42u, 1u, (uint32_t)p};
+                mt19937 rng_nm(ss0);
+                mt19937 rng1_nm(ss1);
                 // Initialize States
                 State st_em  = x0_state;
                 State st_mil = x0_state;

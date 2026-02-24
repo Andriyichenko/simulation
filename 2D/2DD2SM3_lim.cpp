@@ -81,14 +81,16 @@ int main() {
 
         #pragma omp parallel reduction(+:S_lim,B_lim)
         {
-            mt19937 rng_nm(40);
-            mt19937 rng1_nm(50);
-            mt19937 rng_lim(1000);
-
             normal_distribution<double> dist(mu, sigma);
 
             #pragma omp for schedule(static) nowait
             for (int p = 0; p < paths; ++p) {
+                seed_seq ss0{40u, 0u, (uint32_t)p};
+                seed_seq ss1{50u, 1u, (uint32_t)p};
+                seed_seq ss2{1000u, 2u, (uint32_t)p};
+                mt19937 rng_nm(ss0);
+                mt19937 rng1_nm(ss1);
+                mt19937 rng_lim(ss2);
                 State st_nm = x0_state;
                 State st_nm_y = x0_state;
 

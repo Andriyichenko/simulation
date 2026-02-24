@@ -398,7 +398,7 @@ int main() {
 
     const string dir_path = "../data_source";
     system(("mkdir -p " + dir_path).c_str()); 
-    const string csv_path = dir_path + "/2DD2SM3_ax2-x1_s2sin_100_1000_data.csv"; 
+    const string csv_path = dir_path + "/2DD2SM3_100_1000_data.csv"; 
     ofstream ofs(csv_path, ios::out | ios::trunc);
     
     if (!ofs) {
@@ -424,13 +424,16 @@ int main() {
 
         #pragma omp parallel reduction(+:S,Sm,S_1_5,B,Bm,B_1_5) 
         {
-            mt19937 rng_nm(40);
-            mt19937 rng1_nm(50);
 
             normal_distribution<double> dist(mu, sigma);
          
             #pragma omp for schedule(static) nowait
             for (int p = 0; p < paths; ++p) {
+                // 各threadは独自の乱数生成器を持つ
+                seed_seq ss0{42u, 0u, (uint32_t)p};
+                seed_seq ss1{42u, 1u, (uint32_t)p};
+                mt19937 rng_nm(ss0);
+                mt19937 rng1_nm(ss1);
 
                 State st_em  = x0_state;
                 State st_mil = x0_state;

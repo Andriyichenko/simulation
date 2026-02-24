@@ -252,14 +252,17 @@ int main() {
         // OpenMP threadの並列化
     //    #pragma omp parallel reduction(+:S, Sm, S_1_5, Sb, B, Bm, B_1_5, Bb)
     //     {
-            // 各threadは独自の乱数生成器を持つ
-            mt19937 rng(42);
-            mt19937 rng1(30);
-            mt19937 rng2(50);
             normal_distribution<double> dist(mu, sigma);
             
             // #pragma omp for schedule(static) nowait//threadごとに均等に計算を分配
             for (int p = 0; p < paths; ++p) {
+                // 各threadは独自の乱数生成器を持つ
+                seed_seq ss0{42u, 0u, (uint32_t)p};
+                seed_seq ss1{30u, 1u, (uint32_t)p};
+                seed_seq ss2{50u, 2u, (uint32_t)p};
+                mt19937 rng(ss0);
+                mt19937 rng1(ss1);
+                mt19937 rng2(ss2);
                 // 変数の初期化
                 double sum_W = 0.0, sum_W1 = 0.0, sum_W2 = 0.0, sum_Xb = 0.0;
                 double I_W_stateb_1 = 0.0, I_W_stateb_2 = 0.0;

@@ -203,13 +203,14 @@ int main() {
         // OpenMP threadの並列化
         #pragma omp parallel reduction(+:S,Sm,S_1_5,B,Bm,B_1_5) //OpenMPのreduction句で指定の変数の和(+:)を並列計算 i.e. reduction(operator : variable_list)
         {
-            // 各threadは独自の乱数生成器を持つ
-            mt19937 rng(42);
             normal_distribution<double> dist(mu, sigma);
          
             
             #pragma omp for schedule(static) nowait//threadごとに均等に計算を分配
             for (int p = 0; p < paths; ++p) {
+                // 各threadは独自の乱数生成器を持つ
+                seed_seq ss0{42u, 0u, (uint32_t)p};
+                mt19937 rng(ss0);
                 // 変数の初期化
                 double W_state = x_0, W_state1 = x_0, W_state2 = x_0;
                 double X_b = x_0,X_b_Y=x_0,W_state_Y=x_0,W_state1_Y=x_0,W_state2_Y=x_0;
