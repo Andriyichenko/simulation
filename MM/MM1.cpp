@@ -131,7 +131,7 @@ int main() {
     constexpr double b_sq = b * b;          
     constexpr double b_quad = b_sq * b_sq;
     constexpr double x_0 = 1.0;
-    constexpr int max_n = 9;
+    constexpr int max_n = 5;
     
 
 
@@ -162,7 +162,7 @@ int main() {
 
     // 時間ステップ数のループ
     for (int n = 0; n <= max_n; ++n) {
-        const int points = 100 + 100 * n; //(10-50-100-200-400-600-800-1000)
+        const int points = 10 + 10 * n; //(10-50-100-200-400-600-800-1000)
         const int paths = 10 * points * points;
         
         const double dt = (t_end - t_start) / (points - 1);

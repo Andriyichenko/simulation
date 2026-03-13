@@ -65,9 +65,9 @@ inline double f_clip(double x) {
 // S functions and derivatives
 // s(x) = 2 + sin(x)
 // ========================================
-inline double s_func(double x) { return 2.0 + sin(x); }
-inline double ds_func(double x) { return cos(x); }
-inline double dds_func(double x) { return -sin(x); }
+inline double s_func(double x) { return 2.0 + 0.0 * sin(x); }
+inline double ds_func(double x) { return 0.0 * cos(x); }
+inline double dds_func(double x) { return 0.0 * sin(x); } // -sin(x)
 
 // ========================================
 // S functions and derivatives
@@ -411,7 +411,7 @@ int main() {
 
     const string dir_path = "../data_source";
     system(("mkdir -p " + dir_path).c_str()); 
-    const string csv_path = dir_path + "/TEST_2DD2SM3_all_s2sin_100_1000_data.csv"; // or "_min_max_100_1000_data.csv" for min-max option
+    const string csv_path = dir_path + "/NEWTEST_2DD2SM3_all_s2sin_100_1000_data.csv"; // or "_min_max_100_1000_data.csv" for min-max option
     ofstream ofs(csv_path, ios::out | ios::trunc);
     
     if (!ofs) {
