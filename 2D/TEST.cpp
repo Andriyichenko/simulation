@@ -14,6 +14,7 @@
 #include <locale>
 #include <omp.h>
 
+
 using namespace std;
 using namespace Eigen;
 
