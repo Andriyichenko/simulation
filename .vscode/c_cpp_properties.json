@@ -4,7 +4,7 @@
             "name": "Mac",
             "includePath": [//ここですべてのヘッダーファイルのパスを指定する
                 "${workspaceFolder}/**",
-                "/Users/andriyichenko/Downloads/総合/eigen-5.0.0",
+                "${workspaceFolder}/eigen",
                 "/opt/homebrew/opt/libomp/include"
             ],
             "defines": [],

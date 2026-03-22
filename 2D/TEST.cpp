@@ -371,7 +371,7 @@ int main() {
 
     for (int n = 0; n <= max_n; ++n) {
         // High density grid to prevent division by zero and improve precision
-        const int points = 200 + 60 * n; 
+        const int points = 100 + 10 * n; 
         const int paths = 10 * points * points; // Ensures large enough sample size
         
         const double dt = (t_end - t_start) / (points - 1);
