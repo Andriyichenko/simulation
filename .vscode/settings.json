@@ -3,6 +3,9 @@
         "coefb",
         "stateb"
     ],
+    "code-runner.executorMap": {
+        "cpp": "cd $dir && mkdir -p ../compile_file && clang++ -std=c++17 -O3 -flto -Xpreprocessor -fopenmp -I/opt/homebrew/opt/libomp/include -L/opt/homebrew/opt/libomp/lib -lomp -I../Eigen -march=native -mtune=native -funroll-loops -fno-math-errno -fno-trapping-math $fileName -o ../compile_file/$fileNameWithoutExt && OMP_NUM_THREADS=$(sysctl -n hw.ncpu) OMP_PROC_BIND=true ../compile_file/$fileNameWithoutExt"
+    },
     "files.associations": {
         "*.rmd": "markdown",
         "iostream": "cpp",

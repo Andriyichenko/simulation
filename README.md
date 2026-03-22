@@ -804,9 +804,9 @@ This project uses the **Eigen** library (version 3.4.0) for high-performance lin
     *   The library provides high-level matrix and vector classes such as `Eigen::VectorXd`, `Eigen::MatrixXd`, and various decomposition methods.
     *   Common operations used in this project include matrix operations, random number generation (`Eigen::VectorXd::Random()`), and vector arithmetic.
 *   **Compilation Setup**:
-    *   The include path to Eigen must be specified during compilation: `-I/path/to/eigen/eigen-3.4.0`
+    *   The include path to Eigen must be specified during compilation: `-I/path/to/Eigen`
     *   In this project, the Eigen include path is configured in `.vscode/c_cpp_properties.json` for IntelliSense and in the Code Runner settings for compilation.
-    *   Example compilation command: `g++ -I./eigen/eigen-3.4.0 -fopenmp -O3 -o output_file source_file.cpp`
+    *   Example compilation command: `g++ -I./Eigen -fopenmp -O3 -o output_file source_file.cpp`
 
 *   **Key Features Used**:
     *   **Matrix and Vector Operations**: Efficient matrix-vector multiplications, element-wise operations
@@ -814,12 +814,60 @@ This project uses the **Eigen** library (version 3.4.0) for high-performance lin
     *   **Performance**: Eigen is optimized for speed and uses expression templates to avoid unnecessary temporary objects
 
 ### Compilation & Execution
-To compile and run the C++ simulations, we recommend using the **Code Runner** extension.
+This project compiles and runs C++ simulations with the **Code Runner** extension in VS Code.
 
-*   **OpenMP Support**: The C++ code utilizes **OpenMP** for parallel processing to accelerate simulations.
-*   **Configuration**:
-    *   Essential configuration settings, including include paths for **Eigen** and **OpenMP**, are defined in `.vscode/c_cpp_properties.json` and `.vscode/settings.json`.
-    *   These settings are **mandatory** for successful compilation, as they specify the necessary compiler flags and library paths.
-    *   The Eigen include path (e.g., `./eigen/eigen-3.4.0`) must be added to the compiler's include search path.
+*   **Compiler**: `clang++`
+*   **Parallel Runtime**: OpenMP (`libomp`, Homebrew on macOS)
+*   **Output Directory**: `../compile_file/` (relative to each source file directory)
+*   **One-click Run**: Run current C++ file directly from Code Runner with compile + execute in one command
 
-Please refer to the `.vscode/` directory for specific include paths and environment settings.
+#### Code Runner executorMap (`cpp`) configuration
+
+Set the following in your VS Code settings JSON (`code-runner.executorMap`):
+
+```json
+"cpp": "cd $dir && mkdir -p ../compile_file && clang++ -std=c++17 -O3 -flto -Xpreprocessor -fopenmp -I/opt/homebrew/opt/libomp/include -L/opt/homebrew/opt/libomp/lib -lomp -I../Eigen -march=native -mtune=native -funroll-loops -fno-math-errno -fno-trapping-math $fileName -o ../compile_file/$fileNameWithoutExt && OMP_NUM_THREADS=$(sysctl -n hw.ncpu) OMP_PROC_BIND=true ../compile_file/$fileNameWithoutExt"
+```
+
+#### Detailed explanation of the command
+
+*   `cd $dir`
+    *   Switches to the source file's directory before compiling.
+    *   Ensures relative include/output paths are resolved consistently.
+
+*   `mkdir -p ../compile_file`
+    *   Creates a shared output folder (if it does not exist).
+    *   Keeps binaries separate from source files.
+
+*   `clang++ -std=c++17`
+    *   Uses Clang with C++17 standard.
+
+*   `-O3 -flto`
+    *   Enables aggressive optimization and link-time optimization for performance-critical simulations.
+
+*   `-Xpreprocessor -fopenmp -I/opt/homebrew/opt/libomp/include -L/opt/homebrew/opt/libomp/lib -lomp`
+    *   Enables and links OpenMP on macOS (Homebrew `libomp`).
+    *   `-Xpreprocessor -fopenmp` passes OpenMP option through Apple Clang.
+
+*   `-I../Eigen`
+    *   Adds Eigen include path relative to source file folders.
+    *   If your actual folder is lowercase `eigen`, change this to `-I../eigen/eigen-3.4.0` or create a matching `Eigen` path.
+
+*   `-march=native -mtune=native -funroll-loops -fno-math-errno -fno-trapping-math`
+    *   CPU-specific optimization and math-performance flags.
+    *   Designed for faster Monte Carlo / SDE simulation loops.
+
+*   `$fileName -o ../compile_file/$fileNameWithoutExt`
+    *   Compiles current file and writes executable into `compile_file` with the same base name.
+
+*   `OMP_NUM_THREADS=$(sysctl -n hw.ncpu) OMP_PROC_BIND=true ../compile_file/$fileNameWithoutExt`
+    *   Runs executable using all logical CPU cores.
+    *   `OMP_PROC_BIND=true` helps stabilize thread placement and performance.
+
+#### Notes
+
+*   Install OpenMP runtime first if needed:
+    *   `brew install libomp`
+*   This project's Code Runner and IntelliSense settings are maintained in:
+    *   `.vscode/settings.json`
+    *   `.vscode/c_cpp_properties.json`
