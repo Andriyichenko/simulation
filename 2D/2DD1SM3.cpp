@@ -1,5 +1,5 @@
-// 2DD1SM3.cpp
-//Error simulation for 2DD1SM3 scheme
+// 2DD2SM3
+//Error simulation for 2DD2SM3 scheme
 // s(x) = 2 + sin(x)
 
 #include <Eigen/Dense>
@@ -55,7 +55,7 @@ inline double f(double L) {
     return atan(L);
 }
 
-// // Clipping function
+// Clipping function
 // inline double f_clip(double x) {
 //     double min_val = -1.0, max_val = 4.0;
 //     return min(max_val, max(x, min_val));
@@ -169,9 +169,9 @@ inline double Delta1(const State& x, const State& y, double t) {
     double ds_x1 = ds_func(x(0));
     double ds_x2 = ds_func(x(1));
 
-    //a(x) = [x2, -x1]
-    double a1 = x(0);
-    double a2 = x(1);
+    //a(x) = [-x1, -x2]
+    double a1 = -x(0);
+    double a2 = -x(1);
     // double a1 = 0.0;
     // double a2 = 0.0;
 
@@ -211,6 +211,7 @@ inline double Delta2(const State& x, const State& y, double t) {
     double a1 = x(1);
     double a2 = -x(0);
     
+
     // Derivatives of drift: 
     // ∂1 a1 = 0, ∂2 a1 = 1
     // ∂1 a2 = -1, ∂2 a2 = 0
@@ -389,13 +390,15 @@ int main() {
     vector<double> A(max_n + 1, 0.0);
     vector<double> Am(max_n + 1, 0.0);
     vector<double> A_1_5(max_n + 1, 0.0);
+    vector<double> Anm(max_n + 1, 0.0);
     vector<double> E(max_n + 1, 0.0);
     vector<double> Em(max_n + 1, 0.0);
     vector<double> E_1_5(max_n + 1, 0.0);
+    vector<double> Enm(max_n + 1, 0.0);
 
     const string dir_path = "../data_source";
     system(("mkdir -p " + dir_path).c_str()); 
-    const string csv_path = dir_path + "/2DD1SM3_s2sin_100_1000_data.csv"; 
+    const string csv_path = dir_path + "/2DD2SM3_100_1000_data.csv"; 
     ofstream ofs(csv_path, ios::out | ios::trunc);
     
     if (!ofs) {
@@ -415,18 +418,20 @@ int main() {
         const double sqrt_dtm = sqrt(dtm);
         const double sqrt_dt = sqrt(dt);
 
-        double S = 0.0, Sm = 0.0, S_1_5 = 0.0;
-        double B = 0.0, Bm = 0.0, B_1_5 = 0.0;
+        double S = 0.0, Sm = 0.0, S_1_5 = 0.0, Snm = 0.0;
+        double B = 0.0, Bm = 0.0, B_1_5 = 0.0, Bnm = 0.0;
 
 
         #pragma omp parallel reduction(+:S,Sm,S_1_5,B,Bm,B_1_5) 
         {
+
             normal_distribution<double> dist(mu, sigma);
          
             #pragma omp for schedule(static) nowait
             for (int p = 0; p < paths; ++p) {
-                seed_seq ss0{40u, 0u, (uint32_t)p};
-                seed_seq ss1{50u, 1u, (uint32_t)p};
+                // 各threadは独自の乱数生成器を持つ
+                seed_seq ss0{42u, 0u, (uint32_t)p};
+                seed_seq ss1{42u, 1u, (uint32_t)p};
                 mt19937 rng_nm(ss0);
                 mt19937 rng1_nm(ss1);
 
@@ -434,58 +439,55 @@ int main() {
                 State st_mil = x0_state;
                 State st_15  = x0_state;
                 State st_nm  = x0_state;
+                State st_nm_y = x0_state;
 
-                double D_A0  = 0.0, D_A1  = 0.0, D_A2  = 0.0,D_A0_sq  = 0.0, D_A1_sq  = 0.0, D_A2_sq  = 0.0, D_nm = 0.0, D_nm_sq = 0.0;
+                double D_A0  = 0.0, D_A1  = 0.0, D_A2  = 0.0, D_nm = 0.0,D_benchmark = 0.0;
                 double sum_A0 = 0.0, sum_A1 = 0.0, sum_A2 = 0.0,sum_nm = 0.0;
                 
                 for (int idx = 1; idx < points; ++idx) {
                     double Z1 = 0.0;
                     double Z2 = 0.0;
-                    State nm_benchmark;
-
+                    st_nm = st_nm_y;
                     //slide benchmark formula of D4 (Slide Milstein formula)
                     for (int m = 0; m < points; ++m){
 
                         double Z1_nm = dist(rng_nm);
                         double Z2_nm = dist(rng1_nm);
                         State nm_benchmark = A1(st_nm, dtm, Z1_nm, Z2_nm);
-                        double delta_nm = Delta1(st_nm, nm_benchmark, dtm);
-                        D_nm += delta_nm;
-                        D_nm_sq += delta_nm * delta_nm;
                         st_nm = nm_benchmark;
                         Z1 += Z1_nm / sqrt(points);
                         Z2 += Z2_nm / sqrt(points);
                         
                     }
+                    State nm_benchmark_y = st_nm;
                     
                     State next_em  = A0(st_em, dt, Z1, Z2);
                     State next_mil = A1(st_mil, dt, Z1, Z2);
                     State next_15  = A2(st_15, dt, Z1, Z2);
 
-                    D_A0  += Delta1(st_em, next_em, dt);
-                    D_A1 += Delta1(st_mil, next_mil, dt);
-                    D_A2  += Delta1(st_15, next_15, dt);
-
-                    D_A0_sq  += Delta1(st_em, next_em, dt) * Delta1(st_em, next_em, dt);
-                    D_A1_sq += Delta1(st_mil, next_mil, dt) * Delta1(st_mil, next_mil, dt);
-                    D_A2_sq  += Delta1(st_15, next_15, dt) * Delta1(st_15, next_15, dt);
+                    D_A0  += Delta2(st_em, next_em, dt);
+                    D_A1 += Delta2(st_mil, next_mil, dt);
+                    D_A2  += Delta2(st_15, next_15, dt);
+                    D_benchmark += Delta2(st_nm_y, nm_benchmark_y, dt);
 
                     st_em  = next_em;
                     st_mil = next_mil;
                     st_15  = next_15;
+                    st_nm_y = nm_benchmark_y;
                 }
                 
-                sum_A0 = compute_sum_state(D_A0, D_A0_sq);
-                sum_A1 = compute_sum_state(D_A1, D_A1_sq);
-                sum_A2 = compute_sum_state(D_A2, D_A2_sq);
-                sum_nm = compute_sum_state(D_nm, D_nm_sq);
+                sum_A0 = D_A0;
+                sum_A1 = D_A1;
+                sum_A2 = D_A2;
+                sum_nm = D_benchmark;
 
-                S += sgn(sum_A0) - sgn(sum_nm);
-                Sm += sgn(sum_A1) - sgn(sum_nm);
-                S_1_5 += sgn(sum_A2) - sgn(sum_nm);
-                B += (sgn(sum_A0) - sgn(sum_nm)) * (sgn(sum_A0) - sgn(sum_nm));
-                Bm += (sgn(sum_A1) - sgn(sum_nm)) * (sgn(sum_A1) - sgn(sum_nm));
-                B_1_5 += (sgn(sum_A2) - sgn(sum_nm)) * (sgn(sum_A2) - sgn(sum_nm));
+                S += (sgn(sum_A0) - sgn(sum_nm)) / sqrt(dt);
+                Sm += (sgn(sum_A1) - sgn(sum_nm)) / sqrt(dt);
+                S_1_5 += (sgn(sum_A2) - sgn(sum_nm)) / sqrt(dt);
+                
+                B += (sgn(sum_A0) - sgn(sum_nm)) * (sgn(sum_A0) - sgn(sum_nm)) / dt;
+                Bm += (sgn(sum_A1) - sgn(sum_nm)) * (sgn(sum_A1) - sgn(sum_nm)) / dt;
+                B_1_5 += (sgn(sum_A2) - sgn(sum_nm)) * (sgn(sum_A2) - sgn(sum_nm)) / dt;
 
             }
        } // End of parallel region
