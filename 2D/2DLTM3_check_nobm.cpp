@@ -221,7 +221,7 @@ int main() {
 
     // 時間ステップ数のループ
     for (int n = 0; n <= max_n; ++n) {
-        const int points = 100 + 10 * n; 
+        const int points = 100 + 100 * n; 
         const int paths = points * points;
         
         const double dt = (t_end - t_start) / (points - 1);
