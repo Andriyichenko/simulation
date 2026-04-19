@@ -1,4 +1,4 @@
-// 2DD2SSM3_all_test.cpp
+// 2DD2SSM3_all.cpp
 // Scheme: Projected 1.5 Ito-Taylor (X^{2,*}), Delta^{2,*}, Sigma_{2,*}
 
 #include <Eigen/Dense>
@@ -40,9 +40,9 @@ constexpr int sgn(double x) {
 // ========================================================================
 namespace Model {
 
-    inline double s(double x)   { return 1.0 + 0.8 * sin(x); }
-    inline double ds(double x)  { return 0.8 * cos(x); }
-    inline double dds(double x) { return -0.8 * sin(x); }
+    inline double s(double x)   { return 1.0 + 0.5 * sin(x); }
+    inline double ds(double x)  { return 0.5 * cos(x); }
+    inline double dds(double x) { return -0.5 * sin(x); }
 
     inline State a(const State& x) {
         return State(2.0 + sin(x(1)), 1.0 + cos(x(0)));
@@ -52,8 +52,6 @@ namespace Model {
     inline double da1_dx2(const State& x) { return  cos(x(1)); }
     inline double da2_dx1(const State& x) { return -sin(x(0)); }
     inline double da2_dx2(const State& x) { (void)x; return 0.0; }
-
-
 }
 
 // ========================================================================
@@ -328,11 +326,11 @@ inline State A2star(const State& curr, double dt, double Z1, double Z2) {
 int main() {
 
     constexpr double t_start = 0.0;
-    constexpr double t_end   = 0.5;
+    constexpr double t_end   = 1.0;
     constexpr double mu      = 0.0;
     constexpr double sigma   = 1.0;
 
-    const State x0_state = Vector2d(0.5, 0.5);
+    const State x0_state = Vector2d(1.0, 1.0);
     constexpr int max_n = 9;
 
     vector<double> A(max_n+1,0.0), Am(max_n+1,0.0), A_2s(max_n+1,0.0), A_lim(max_n+1,0.0), A_1_5(max_n+1,0.0);
@@ -371,6 +369,7 @@ int main() {
                 seed_seq ss1{50u, 1u, (uint32_t)p};
                 mt19937 rng_nm(ss0);
                 mt19937 rng1_nm(ss1);
+                
 
                 State st_em  = x0_state;
                 State st_mil = x0_state;
