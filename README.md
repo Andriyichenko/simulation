@@ -616,8 +616,7 @@ $$
 then one NV step with time step $h$ and Brownian increments $\Delta W_k^1, \Delta W_k^2 \sim N(0,h)$ is written as
 
 $$
-X_{k+1}^{NV}
-=
+X_{k+1}^{NV} =
 \begin{cases}
 \varphi_0^{h/2} \circ \varphi_2^{\Delta W_k^2} \circ \varphi_1^{\Delta W_k^1} \circ \varphi_0^{h/2}(X_k^{NV}), & \eta_k = +1, \\
 \varphi_0^{h/2} \circ \varphi_1^{\Delta W_k^1} \circ \varphi_2^{\Delta W_k^2} \circ \varphi_0^{h/2}(X_k^{NV}), & \eta_k = -1,
