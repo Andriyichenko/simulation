@@ -311,7 +311,7 @@ int main() {
     const string dir_path = "../data_source";
     system(("mkdir -p " + dir_path).c_str());
 
-    const string csv_path = dir_path + "/TEST_2DD0F0M3_all_with_NV_100_1000_data.csv";
+    const string csv_path = dir_path + "/2DD0F0NVM3_all_100_1000_data.csv";
     ofstream ofs(csv_path, ios::out | ios::trunc);
 
     if (!ofs) {

@@ -146,7 +146,7 @@ int main() {
     vector<double> A(max_n + 1), Am(max_n + 1), A_1_5(max_n + 1), A_nv(max_n + 1);
     vector<double> E(max_n + 1), Em(max_n + 1), E_1_5(max_n + 1), E_nv(max_n + 1);
 
-    const string csv_path = "../data_source/2DD1SM3_all_data.csv";
+    const string csv_path = "../data_source/2DD1F1NVM3_all_100_1000_data.csv";
     system("mkdir -p ../data_source");
     ofstream ofs(csv_path, ios::out | ios::trunc);
     ofs << "n,points,E,Em,E_1.5,E_nv,A,Am,A_1.5,A_nv\n";

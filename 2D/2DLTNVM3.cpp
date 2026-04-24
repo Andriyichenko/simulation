@@ -137,7 +137,7 @@ inline State A2(const State& curr, double dt, double Z1, double Z2) {
     return next;
 }
 
-// Ninomiya-Victoir Scheme (Weak Order high)
+// Ninomiya-Victoir Scheme
 inline State A3(const State& curr, double dt, double Z1, double Z2, int xi) {
     const double sqrt_dt = sqrt(dt);
     double dW1 = sqrt_dt * Z1;
@@ -204,7 +204,7 @@ int main() {
     // CSV ファイル名の設定
     const string dir_path = "../data_source";
     system(("mkdir -p " + dir_path).c_str()); 
-    const string csv_path = dir_path + "/2DLTM3_100_1000_data.csv"; 
+    const string csv_path = dir_path + "/2DLTNVM3_100_1000_data.csv"; 
     ofstream ofs(csv_path, ios::out | ios::trunc);
     
     if (!ofs) {
@@ -233,7 +233,7 @@ int main() {
             normal_distribution<double> dist_nm1(mu, sigma);
             bernoulli_distribution dist_xi(0.5);
          
-            #pragma omp for schedule(static) 
+            #pragma omp for schedule(static) no wait
             for (int p = 0; p < paths; ++p) {
                 seed_seq ss0{30u, 0u, (uint32_t)p};
                 seed_seq ss1{42u, 1u, (uint32_t)p};
@@ -264,13 +264,13 @@ int main() {
                     double Z2 = 0.0;
 
                     // slide benchmark fomula of D4 (Slide Milstein)
-                    for (int m = 0; m < points - 1; ++m){
+                    for (int m = 0; m < points; ++m){
                         double Z1_nm = dist_nm0(rng_nm);
                         double Z2_nm = dist_nm1(rng1_nm);
                         State nm_benchmark = A1(st_nm, dtm, Z1_nm, Z2_nm);
                         st_nm = nm_benchmark;
-                        Z1 += Z1_nm / sqrt(points - 1.0);
-                        Z2 += Z2_nm / sqrt(points - 1.0);
+                        Z1 += Z1_nm / sqrt(points);
+                        Z2 += Z2_nm / sqrt(points);
                     }
                     
                     // Generate variable for Ninomiya-Victoir flow switch
@@ -315,7 +315,7 @@ int main() {
                 B_1_5 += (val_15 - val_nm) * (val_15 - val_nm);
                 B_nv += (val_nv - val_nm) * (val_nv - val_nm);
             }
-        }
+        }// End of parallel region
 
         // 期待値の計算
         const double inv_paths = 1.0 / paths;
