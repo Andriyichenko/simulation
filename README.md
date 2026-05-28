@@ -4,7 +4,7 @@
 
 This project contains various simulation schemes for stochastic processes, focusing on different **Test Functionals** and **Approximation Methods**.
 
-This README is updated periodically with new models and additional technical details as the project progresses.
+⚠️ ***This README is updated periodically with new models and additional technical details as the project progresses.***
 
 Please refer to the page 58 ~66 of the paper [*High order polynomial regression approximation schemes in total variation for multidimensional diffusions*](https://www.overleaf.com/project/6801f9a43ca0501e11926ee2)
 
