@@ -4,6 +4,8 @@
 
 This project contains various simulation schemes for stochastic processes, focusing on different **Test Functionals** and **Approximation Methods**.
 
+This README is updated periodically with new models and additional technical details as the project progresses.
+
 Please refer to the page 58 ~66 of the paper [*High order polynomial regression approximation schemes in total variation for multidimensional diffusions*](https://www.overleaf.com/project/6801f9a43ca0501e11926ee2)
 
 <!-- $\text{X\\_Y}$ \\_表示在github里面出现X_Y -->
@@ -24,6 +26,7 @@ Please refer to the page 58 ~66 of the paper [*High order polynomial regression 
     *   [6. Local Time (LT)](#6-local-time-lt)
     *   [7. Max Measure (M)](#7-max-measure-m)
     *   [8. Model 1 & Model 2 & Model 3(M1&M2&M3)](#8-model-1-model-2--model-3-m1-m2--m3)
+    *   [9. Fractals: Gasket & Koch](#9-fractals-gasket--koch)
 * **[Calculation](#calculation)**
 * **[Bug Fix Log](#bug-fix-log)**
     *   [2026-02-24: mt19937 Seeding Refactoring](#2026-02-24-mt19937-seeding-refactoring)
@@ -57,6 +60,7 @@ The file naming convention used throughout this project is as follows:
     *   Indicates that the simulation is performed in a **2-dimensional** setting.
     *   `2DD1S` refers to the simulation of $\mathrm{sgn}(D_1(n, X))$ in 2D, typically involving the **Sign** functional or related metrics.
     *   Files in the 2D folder whose names contain `NVM3` are the **Model 3 Ninomiya–Victoir (NV)** programs. They bundle the simulations for $\bar{X}^{0}$, $\bar{X}^{1}$, $\bar{X}^{2}$, and the NV scheme in a single file, so the same code can compare all four approximations under the same Brownian paths and model parameters.
+    *   The `2D/fractals/` subfolder contains the fractal examples, including the **Sierpinski Gasket** and **Koch curve** models, both of which reuse the same 2D stochastic framework together with a fractal occupation-style test functional.
 
  *   **`LT` prefix** (e.g., `LTM1`, `LTM2`):
         *   Indicates that the simulation focuses on the **Local Time** approximation.
@@ -679,6 +683,27 @@ w_t^{122} = \big((w_2)^2 - t\big)w_1
 $$
 
 Please refer to the page 59 ~ 61 of the [*paper*](https://www.overleaf.com/project/6801f9a43ca0501e11926ee2)
+
+### 9. Fractals: Gasket & Koch
+**Directory:** `2D/fractals/`
+
+This subfolder adds two fractal examples on top of the 2D simulation framework: the **Sierpinski Gasket** and the **Koch curve**. Both examples are built with the same basic stochastic ingredients used in the other 2D files, namely the Euler, Milstein, strong order 1.5, and Ninomiya–Victoir schemes.
+
+The goal here is to study how the process interacts with a fractal target set through a local-time-style occupation functional. Instead of evaluating only a smooth reference point or a simple one-dimensional set, the code measures how often the simulated path stays near or inside a sequence of fractal approximations.
+
+#### Sierpinski Gasket
+
+The gasket example is implemented in [2DLT_Gasket.cpp](2D/fractals/2DLT_Gasket.cpp). It constructs the usual nested triangular approximations of the Sierpinski Gasket, denoted by $F^{(k)}$, and uses the Lebesgue measure of the $k$-th approximation together with an indicator function to build the discrete occupation functional. The level $k$ is chosen according to the scaling rule discussed in the paper, so the resolution of the fractal approximation grows with the discretization size.
+
+In this example, the simulation output is used to compare the different stochastic schemes under the same fractal target set, and the final test functional is passed through $f(x)=\arctan(x)$ for stability.
+
+#### Koch Curve
+
+The Koch example is implemented in [2DLT_koch.cpp](2D/fractals/2DLT_koch.cpp). It replaces the gasket target set with a sequence of polygonal approximations of the Koch curve. For each level, the code builds the curve by repeatedly replacing each segment with the four-segment Koch pattern, then measures the distance from the simulated path to that set.
+
+The resulting occupation-type kernel is scaled by the fractal dimension of the Koch curve, so the contribution of each sample reflects both the geometric complexity of the target set and the simulation step size. As in the gasket case, the code compares the Euler, Milstein, 1.5 order, and Ninomiya–Victoir schemes under the same Monte Carlo setup.
+
+*   **Simulation Code:** [2D/fractals](./2D/fractals/)
 
 ---
 
